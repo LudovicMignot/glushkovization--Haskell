@@ -1,11 +1,11 @@
 module NFA where
 
-import qualified Data.Foldable as F (foldl')
+import qualified Data.Foldable as F (all, foldl')
 import Data.Map (Map)
 import qualified Data.Map as Map (foldMapWithKey, foldl', lookup)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
-import qualified Data.Set as Set (empty, foldl', insert, intersection, null, union)
+import qualified Data.Set as Set (empty, foldl', insert, intersection, null, size, union)
 
 data NFA symbol state = NFA
   { sigma :: symbol,
@@ -29,3 +29,6 @@ sends nfa = flip $ F.foldl' $ flip $ sendsStateSet nfa
 
 recognizes :: (Ord state, Ord symbol) => NFA symbol state -> [symbol] -> Bool
 recognizes nfa w = not $ Set.null $ Set.intersection (sends nfa w $ initial nfa) (final nfa)
+
+isStandard :: (Ord symbol) => NFA state symbol -> Bool
+isStandard nfa = Set.size (initial nfa) == 1 && F.all (F.all $ \dests -> Set.null $ Set.intersection dests $ initial nfa) (delta nfa)
