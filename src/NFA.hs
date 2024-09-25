@@ -6,15 +6,13 @@ import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, 
 import Data.Maybe (fromMaybe)
 import qualified Data.Maybe as Maybe
 import Data.Set (Set)
-import qualified Data.Set as Set (disjoint, empty, foldl', insert, map, singleton, size, union)
+import qualified Data.Set as Set (disjoint, empty, foldl', insert, map, singleton, size, union, unions)
 
 -- * The NFA type
 
 -- | Type to represent a Nondeterministic Finite Automaton (NFA)
 data NFA symbol state = NFA
-  { -- | The alphabet of the NFA
-    sigma :: symbol,
-    -- | The set of initial states
+  { -- | The set of initial states
     initial :: Set state,
     -- | The set of final states
     final :: Set state,
@@ -35,8 +33,7 @@ mapState ::
   NFA symbol state'
 mapState f nfa =
   NFA
-    { sigma = sigma nfa,
-      initial = Set.map f (initial nfa),
+    { initial = Set.map f (initial nfa),
       final = Set.map f (final nfa),
       delta = Map.foldlWithKey' (\res p a_to_states -> Map.insert (f p) (Set.map f <$> a_to_states) res) Map.empty (delta nfa)
     }
@@ -50,7 +47,7 @@ getStates ::
   NFA symbol state ->
   -- | The set of the states that appear in the transition Map
   Set state
-getStates = Map.foldMapWithKey (\q -> Set.insert q . F.fold) . delta
+getStates nfa = Set.unions [Map.foldMapWithKey (\q -> Set.insert q . F.fold) $ delta nfa, initial nfa, final nfa]
 
 -- * Actions of a symbol / a word over a state / set of states
 
@@ -127,8 +124,7 @@ makeStandard ::
   NFA symbol (Maybe state)
 makeStandard nfa =
   NFA
-    { sigma = sigma nfa,
-      initial = Set.singleton Nothing,
+    { initial = Set.singleton Nothing,
       final = final',
       delta = Map.insert Nothing succ_inits delta_just
     }
