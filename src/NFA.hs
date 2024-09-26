@@ -1,13 +1,16 @@
+{-# LANGUAGE TupleSections #-}
+
 module NFA where
 
 import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldl')
 import Data.Map (Map)
-import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, lookup, singleton, unionWith)
+import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, lookup, singleton, toList, unionWith)
 import Data.Maybe (fromMaybe)
 import qualified Data.Maybe as Maybe
 import Data.Set (Set)
-import qualified Data.Set as Set (disjoint, empty, foldl', fromList, insert, map, singleton, size, union, unions)
+import qualified Data.Set as Set (difference, disjoint, empty, foldl', fromList, insert, map, member, singleton, size, toList, union, unions)
 import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements, generate, vectorOf)
+import ToString (ToString, toHtmlCapString, toHtmlString)
 
 -- * The NFA type
 
@@ -21,6 +24,39 @@ data NFA symbol state = NFA
     delta :: Map state (Map symbol (Set state))
   }
   deriving (Show)
+
+-- * Dot representation
+
+-- | Converts an NFA into its dot representation, as a String
+nfaToDot ::
+  (ToString state, Ord state, ToString symbol) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The dot String
+  String
+nfaToDot auto = "digraph{" ++ statementList ++ "}"
+  where
+    statementList = graphs ++ nodes ++ edges
+    graphs = "graph [rankdir = LR];"
+    nodes = finals ++ nonFinals
+    finals = concatMap (\s -> myToString s ++ att1 s) $ Set.toList $ final auto
+    nonFinals = concatMap (\s -> myToString s ++ att2 s) $ Set.difference (getStates auto) $ final auto
+    edges = concatMap (\(p, x, q) -> myToString p ++ "->" ++ myToString q ++ " [label = <" ++ toHtmlString x ++ ">];") trans
+    trans =
+      Map.foldlWithKey' (\accu (p, q) x -> (p, x, q) : accu) [] $
+        F.foldl' (\accu (p, x, q) -> Map.insertWith (++) (p, q) [x] accu) Map.empty $
+          transitionList auto
+    myToString p = "\"" ++ toHtmlCapString p ++ "\""
+    att1 p
+      | isInitial auto p =
+          " [shape = octagon, peripheries = 2, style = rounded, style = filled, color = gray35" ++ ", label=<" ++ toHtmlString p ++ ">];"
+      | otherwise =
+          " [shape = box, peripheries = 2, style = rounded" ++ ", label=<" ++ toHtmlString p ++ ">];"
+    att2 p
+      | isInitial auto p =
+          " [shape = octagon, style = rounded, style = filled, color = gray35" ++ ", label=<" ++ toHtmlString p ++ ">];"
+      | otherwise =
+          " [shape = box, style = rounded" ++ ", label=<" ++ toHtmlString p ++ ">];"
 
 -- * Modification functions
 
@@ -83,7 +119,7 @@ mapState f nfa =
       delta = Map.foldlWithKey' (\res p a_to_states -> Map.insert (f p) (Set.map f <$> a_to_states) res) Map.empty (delta nfa)
     }
 
--- * Computation of the states of the NFA
+-- * Requests
 
 -- | Computes the states that appears in the transition Map, as source or as destination
 getStates ::
@@ -93,6 +129,25 @@ getStates ::
   -- | The set of the states that appear in the transition Map
   Set state
 getStates nfa = Set.unions [Map.foldMapWithKey (\q -> Set.insert q . F.fold) $ delta nfa, initial nfa, final nfa]
+
+-- | Returns the list of the transitions of an NFA
+transitionList ::
+  -- | The NFA
+  NFA symbol state ->
+  -- | The transition list
+  [(state, symbol, state)]
+transitionList nfa = Map.toList (delta nfa) >>= \(p, a_to_states) -> Map.toList a_to_states >>= (\(a, qs) -> (p,a,) <$> Set.toList qs)
+
+-- | Tests whether a state is initial
+isInitial ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The state p
+  state ->
+  -- | The Boolean "p is initial"
+  Bool
+isInitial nfa p = Set.member p $ initial nfa
 
 -- * Actions of a symbol / a word over a state / set of states
 

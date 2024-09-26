@@ -27,6 +27,7 @@ library
   exposed-modules:
       Lib
       NFA
+      ToString
   other-modules:
       Paths_glushkovization
   autogen-modules:
