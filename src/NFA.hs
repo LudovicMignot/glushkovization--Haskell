@@ -2,11 +2,12 @@ module NFA where
 
 import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldl')
 import Data.Map (Map)
-import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, lookup, unionWith)
+import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, lookup, singleton, unionWith)
 import Data.Maybe (fromMaybe)
 import qualified Data.Maybe as Maybe
 import Data.Set (Set)
-import qualified Data.Set as Set (disjoint, empty, foldl', insert, map, singleton, size, union, unions)
+import qualified Data.Set as Set (disjoint, empty, foldl', fromList, insert, map, singleton, size, union, unions)
+import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements, generate, vectorOf)
 
 -- * The NFA type
 
@@ -19,6 +20,50 @@ data NFA symbol state = NFA
     -- | The transition map, associating a state with a map that associates a symbol with a set of states
     delta :: Map state (Map symbol (Set state))
   }
+  deriving (Show)
+
+-- * Modification functions
+
+-- | Adds a transition (p, a, q) in a transition Map
+addTransitionInMap ::
+  (Ord symbol, Ord state) =>
+  -- | The transition Map
+  Map state (Map symbol (Set state)) ->
+  -- | The transition
+  (state, symbol, state) ->
+  -- | The resulting transition Map
+  Map state (Map symbol (Set state))
+addTransitionInMap trans (p, a, q) = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a (Set.singleton q)) trans
+
+-- * The Arbitrary Instance
+
+instance (Ord state, Ord symbol, Arbitrary symbol, Arbitrary state) => Arbitrary (NFA symbol state) where
+  arbitrary = NFA <$> arbitrary <*> arbitrary <*> arbitrary
+
+-- | Creates a generator for a NFA, from a superset of symbols and a superset of states, with bounds for the number of initial states, of final states and of transitions
+makeGenNFA ::
+  (Ord state, Ord symbol) =>
+  -- | The superset of symbols
+  [symbol] ->
+  -- | The superset of states
+  [state] ->
+  -- | The maximal number of initial states
+  Int ->
+  -- | The maximal number of final states
+  Int ->
+  -- | The maximal number of transitions
+  Int ->
+  -- | The resulting generator
+  Gen (NFA symbol state)
+makeGenNFA alpha qs inits finals transitions = do
+  is <- fmap Set.fromList $ vectorOf inits $ elements qs
+  fs <- fmap Set.fromList $ vectorOf finals $ elements qs
+  ts <- vectorOf transitions $ elements [(p, a, q) | p <- qs, a <- alpha, q <- qs]
+  return $ NFA is fs $ F.foldl' addTransitionInMap Map.empty ts
+
+-- | Generates an NFA using the corresponding makeGenNFA generator
+generateNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
+generateNFA alpha qs inits finals transitions = generate $ makeGenNFA alpha qs inits finals transitions
 
 -- * Functorial fmap like
 
