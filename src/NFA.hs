@@ -1,16 +1,28 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TupleSections #-}
 
 module NFA where
 
 import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldl')
+import Data.GraphViz.Attributes
+import Data.GraphViz.Attributes.Complete
+import Data.GraphViz.Commands
+import Data.GraphViz.Types.Generalised as G
+import Data.GraphViz.Types.Monadic
 import Data.Map (Map)
 import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, lookup, singleton, toList, unionWith)
 import Data.Maybe (fromMaybe)
 import qualified Data.Maybe as Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set (difference, disjoint, empty, foldl', fromList, insert, map, member, singleton, size, toList, union, unions)
+import qualified Data.Text.Lazy as L
+import System.Directory
+  ( createDirectoryIfMissing,
+    getCurrentDirectory,
+  )
+import System.FilePath (combine)
 import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements, generate, vectorOf)
-import ToString (ToString, toHtmlCapString, toHtmlString)
+import ToString (ToString, toHtmlCapString, toHtmlString, toString)
 
 -- * The NFA type
 
@@ -58,6 +70,92 @@ nfaToDot auto = "digraph{" ++ statementList ++ "}"
       | otherwise =
           " [shape = box, style = rounded" ++ ", label=<" ++ toHtmlString p ++ ">];"
 
+-- | Converts an NFA into its dot representation, as a DotGraph String, with given name
+faToGraphviz ::
+  (ToString state, Ord state, ToString symbol) =>
+  -- | The name
+  L.Text ->
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting DotGraph String value
+  G.DotGraph String
+faToGraphviz name auto =
+  digraph (Str name) $ do
+    graphAttrs [RankDir FromLeft]
+    mapM_ (\s -> node (toString s) (att1 s)) $ final auto
+    mapM_ (\s -> node (toString s) (att2 s)) $ Set.difference (getStates auto) $ final auto
+    mapM_ (\(p, x, q) -> edge (toString p) (toString q) [toLabel (toString x)]) trans
+  where
+    trans =
+      Map.foldlWithKey' (\accu (p, q) x -> (p, x, q) : accu) [] $
+        F.foldl' (\accu (p, x, q) -> Map.insertWith (++) (p, q) [x] accu) Map.empty $
+          transitionList auto
+    att1 p
+      | isInitial auto p = [shape Octagon, Peripheries 2, Style [SItem Rounded [], SItem Filled []], Color (toColorList [RGB 100 100 100])]
+      | otherwise = [shape BoxShape, Peripheries 2, Style [SItem Rounded []]]
+    att2 p
+      | isInitial auto p = [shape Octagon, Style [SItem Rounded [], SItem Filled []], Color (toColorList [RGB 100 100 100])]
+      | otherwise = [shape BoxShape, Style [SItem Rounded []]]
+
+-- | Converts an NFA into a PNG file with a given name
+toPng ::
+  (ToString state, Ord state, ToString symbol) =>
+  -- | The name of the file
+  String ->
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting action
+  IO FilePath
+toPng name aut = addExtension (runGraphviz autoDot) Png name
+  where
+    autoDot = faToGraphviz (L.pack name) aut
+
+-- | Converts an NFA into a PNG file with a given name in a given directory
+toPngAt ::
+  (ToString state, Ord state, ToString symbol) =>
+  -- | The name of the directory
+  String ->
+  -- | The name of the file
+  String ->
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting action
+  IO FilePath
+toPngAt dir name aut =
+  addExtension (runGraphviz autoDot) Png (combine dir name)
+  where
+    autoDot = faToGraphviz (L.pack name) aut
+
+-- | Converts an NFA into a PNG file with a given name in a given directory, created if missing
+toPngInDir ::
+  (ToString state, Ord state, ToString symbol) =>
+  -- | The name of the directory
+  String ->
+  -- | The name of the file
+  String ->
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting action
+  IO FilePath
+toPngInDir dir name aut = do
+  cur <- getCurrentDirectory
+  let img = combine cur dir
+  createDirectoryIfMissing False img
+  addExtension (runGraphviz autoDot) Png (combine img name)
+  where
+    autoDot = faToGraphviz (L.pack name) aut
+
+-- | Converts an NFA into a PNG file with a given name in a directory named "img", created if missing
+toPngInImgDir ::
+  (ToString state, Ord state, ToString symbol) =>
+  -- | The name of the file
+  String ->
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting action
+  IO FilePath
+toPngInImgDir = toPngInDir "img"
+
 -- * Modification functions
 
 -- | Adds a transition (p, a, q) in a transition Map
@@ -91,15 +189,15 @@ makeGenNFA ::
   Int ->
   -- | The resulting generator
   Gen (NFA symbol state)
-makeGenNFA alpha qs inits finals transitions = do
+makeGenNFA symbols qs inits finals transitions = do
   is <- fmap Set.fromList $ vectorOf inits $ elements qs
   fs <- fmap Set.fromList $ vectorOf finals $ elements qs
-  ts <- vectorOf transitions $ elements [(p, a, q) | p <- qs, a <- alpha, q <- qs]
+  ts <- vectorOf transitions $ elements [(p, a, q) | p <- qs, a <- symbols, q <- qs]
   return $ NFA is fs $ F.foldl' addTransitionInMap Map.empty ts
 
 -- | Generates an NFA using the corresponding makeGenNFA generator
 generateNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
-generateNFA alpha qs inits finals transitions = generate $ makeGenNFA alpha qs inits finals transitions
+generateNFA symbols qs inits finals transitions = generate $ makeGenNFA symbols qs inits finals transitions
 
 -- * Functorial fmap like
 
