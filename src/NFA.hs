@@ -3,14 +3,15 @@
 
 module NFA where
 
-import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldl')
+import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldMap, foldl')
 import Data.GraphViz.Attributes
 import Data.GraphViz.Attributes.Complete
 import Data.GraphViz.Commands
 import Data.GraphViz.Types.Generalised as G
 import Data.GraphViz.Types.Monadic
+import Data.List (groupBy, nub, sort)
 import Data.Map (Map)
-import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, lookup, singleton, toList, unionWith)
+import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, keysSet, lookup, mapWithKey, singleton, toList, unionWith)
 import Data.Maybe (fromMaybe)
 import qualified Data.Maybe as Maybe
 import Data.Set (Set)
@@ -21,7 +22,7 @@ import System.Directory
     getCurrentDirectory,
   )
 import System.FilePath (combine)
-import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements, generate, vectorOf)
+import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements, generate, suchThat, vectorOf)
 import ToString (ToString, toHtmlCapString, toHtmlString, toString)
 
 -- * The NFA type
@@ -195,9 +196,25 @@ makeGenNFA symbols qs inits finals transitions = do
   ts <- vectorOf transitions $ elements [(p, a, q) | p <- qs, a <- symbols, q <- qs]
   return $ NFA is fs $ F.foldl' addTransitionInMap Map.empty ts
 
+-- | Creates a generator for a NFA from makeGenNFa, such that the generated NFAs satisfy the predicate p
+makeGenNFASuchThat :: (Ord state, Ord symbol) => (NFA symbol state -> Bool) -> [symbol] -> [state] -> Int -> Int -> Int -> Gen (NFA symbol state)
+makeGenNFASuchThat p symbols qs inits finals transitions = makeGenNFA symbols qs inits finals transitions `suchThat` p
+
 -- | Generates an NFA using the corresponding makeGenNFA generator
 generateNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
 generateNFA symbols qs inits finals transitions = generate $ makeGenNFA symbols qs inits finals transitions
+
+-- | Generates an NFA using the corresponding makeGenNFASuchThat generator
+generateNFASuchThat :: (Ord state, Ord symbol) => (NFA symbol state -> Bool) -> [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
+generateNFASuchThat p symbols qs inits finals transitions = generate $ makeGenNFASuchThat p symbols qs inits finals transitions
+
+-- | Generates an homogeneous NFA using the corresponding makeGenNFA generator
+generateHomogeneousNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
+generateHomogeneousNFA = generateNFASuchThat isHomogeneous
+
+-- | Generates an homogeneous NFA using the corresponding makeGenNFA generator
+generateStandardNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
+generateStandardNFA = generateNFASuchThat isStandard
 
 -- * Functorial fmap like
 
@@ -227,6 +244,15 @@ getStates ::
   -- | The set of the states that appear in the transition Map
   Set state
 getStates nfa = Set.unions [Map.foldMapWithKey (\q -> Set.insert q . F.fold) $ delta nfa, initial nfa, final nfa]
+
+-- | Retuens the symbols that appear in the NFA
+getAlphabet ::
+  (Ord symbol) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting set
+  Set symbol
+getAlphabet nfa = F.foldMap Map.keysSet $ delta nfa
 
 -- | Returns the list of the transitions of an NFA
 transitionList ::
@@ -339,3 +365,36 @@ makeStandard nfa =
     final'
       | Set.disjoint (initial nfa) (final nfa) = just_final
       | otherwise = Set.insert Nothing just_final
+
+-- * Homogeneous NFA
+
+-- | Determines whether an NFA is homogeneous, i.e., if any two transitions entering the same state are labelled equally
+isHomogeneous ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | The Boolean "A is homogeneous"
+  Bool
+isHomogeneous nfa = all (null . tail . nub) $ groupBy (\(p, _) (q, _) -> p == q) $ sort $ (\(_, a, q) -> (q, a)) <$> transitionList nfa
+
+-- | Computes an equivalent homogeneous NFA from an NFA by cloning the states w.r.t. the alphabet of the NFA
+makeHomogeneous ::
+  (Ord symbol, Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting homogeneous NFA
+  NFA symbol (state, Maybe symbol)
+makeHomogeneous nfa =
+  NFA inits finals new_trans
+  where
+    sigma = getAlphabet nfa
+    sigma_m = Set.insert Nothing $ Set.map Just sigma
+    inits = F.foldMap (\i -> Set.map (i,) sigma_m) $ initial nfa
+    finals = F.foldMap (\f -> Set.map (f,) sigma_m) $ final nfa
+    new_succs = Map.mapWithKey (\a succs -> Set.map (,Just a) succs)
+    new_trans =
+      Map.foldMapWithKey
+        ( \p a_to_states ->
+            let newSuccs = new_succs a_to_states in F.foldMap (\a -> Map.singleton (p, a) newSuccs) sigma_m
+        )
+        $ delta nfa
