@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 
 module NFA where
@@ -22,7 +23,7 @@ import System.Directory
     getCurrentDirectory,
   )
 import System.FilePath (combine)
-import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements, generate, suchThat, vectorOf)
+import Test.QuickCheck (Arbitrary, Gen, arbitrary, choose, elements, generate, sized, suchThat, vectorOf)
 import ToString (ToString, toHtmlCapString, toHtmlString, toString)
 
 -- * The NFA type
@@ -178,8 +179,19 @@ removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (fin
 
 -- * The Arbitrary Instance
 
-instance (Ord state, Ord symbol, Arbitrary symbol, Arbitrary state) => Arbitrary (NFA symbol state) where
-  arbitrary = NFA <$> arbitrary <*> arbitrary <*> arbitrary
+instance Arbitrary (NFA Char Int) where
+  arbitrary = sized $ \n -> do
+    let qs = [1 .. n]
+    let alphabet = ['a' .. 'e']
+    nb_i <- choose (0, n)
+    nb_f <- choose (0, n)
+    nb_t <- choose (0, n * n * length alphabet)
+    is <- vectorOf nb_i $ elements qs
+    fs <- vectorOf nb_f $ elements qs
+    ts <- vectorOf nb_t $ elements [(p, a, q) | p <- qs, a <- alphabet, q <- qs]
+    return $ NFA (Set.fromList is) (Set.fromList fs) $ F.foldl' addTransitionInMap Map.empty ts
+
+-- NFA <$> arbitrary <*> arbitrary <*> arbitrary
 
 -- | Creates a generator for a NFA, from a superset of symbols and a superset of states, with bounds for the number of initial states, of final states and of transitions
 makeGenNFA ::
