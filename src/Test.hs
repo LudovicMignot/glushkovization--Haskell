@@ -1,6 +1,21 @@
 module Test where
 
 import NFA
+  ( NFA,
+    generateHomogeneousNFA,
+    generateNFA,
+    generateNFASuchThat,
+    generateStandardNFA,
+    getUsefulStates,
+    isHomogeneous,
+    isStandard,
+    makeHomogeneous,
+    makeStandard,
+    nfaToDot,
+    reverse,
+    toPngInImgDir,
+    trim,
+  )
 import ToString (toString)
 
 randomAut :: IO (NFA Char Int)
