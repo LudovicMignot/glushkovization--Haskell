@@ -41,3 +41,9 @@ runTestHomogeneous = do
   aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 3 3 10
   _ <- toPngInImgDir "test_hom_start" aut
   toPngInImgDir "test_hom_result" $ makeHomogeneous aut
+
+runTestReversal :: IO FilePath
+runTestReversal = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 3 3 10
+  _ <- toPngInImgDir "test_rev_start" aut
+  toPngInImgDir "test_rev_result" $ NFA.reverse aut

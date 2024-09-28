@@ -398,3 +398,16 @@ makeHomogeneous nfa =
             let newSuccs = new_succs a_to_states in F.foldMap (\a -> Map.singleton (p, a) newSuccs) sigma_m
         )
         $ delta nfa
+
+-- * Reversal
+
+-- | Computes the reversal of an NFA
+reverse ::
+  (Ord symbol, Ord state) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | The reversal of A
+  NFA symbol state
+reverse nfa = NFA (final nfa) (initial nfa) trans'
+  where
+    trans' = F.foldl' addTransitionInMap Map.empty ((\(p, a, q) -> (q, a, p)) <$> transitionList nfa)
