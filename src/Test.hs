@@ -1,7 +1,7 @@
 module Test where
 
 import NFA
-import ToString ()
+import ToString (toString)
 
 randomAut :: IO (NFA Char Int)
 randomAut = generateNFA ['a' .. 'c'] [1 .. 7] 3 3 10
@@ -47,3 +47,18 @@ runTestReversal = do
   aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 3 3 10
   _ <- toPngInImgDir "test_rev_start" aut
   toPngInImgDir "test_rev_result" $ NFA.reverse aut
+
+runUsefulTest :: IO ()
+runUsefulTest = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 3 3 10
+  _ <- toPngInImgDir "test_useful" aut
+  let us = getUsefulStates aut
+  putStrLn $ toString us
+
+runTrimTest :: IO ()
+runTrimTest = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 3 3 10
+  _ <- toPngInImgDir "test_trim_start" aut
+  _ <- toPngInImgDir "test_trim_result" $ trim aut
+  let us = getUsefulStates aut
+  putStrLn $ toString us

@@ -11,11 +11,11 @@ import Data.GraphViz.Types.Generalised as G
 import Data.GraphViz.Types.Monadic
 import Data.List (groupBy, nub, sort)
 import Data.Map (Map)
-import qualified Data.Map as Map (empty, foldMapWithKey, foldlWithKey', insert, insertWith, keysSet, lookup, mapWithKey, singleton, toList, unionWith)
+import qualified Data.Map as Map (delete, empty, foldMapWithKey, foldlWithKey', insert, insertWith, keysSet, lookup, map, mapWithKey, singleton, toList, unionWith)
 import Data.Maybe (fromMaybe)
 import qualified Data.Maybe as Maybe
 import Data.Set (Set)
-import qualified Data.Set as Set (difference, disjoint, empty, foldl', fromList, insert, map, member, singleton, size, toList, union, unions)
+import qualified Data.Set as Set (difference, disjoint, empty, foldl', fromList, insert, intersection, map, member, null, singleton, size, toList, union, unions)
 import qualified Data.Text.Lazy as L
 import System.Directory
   ( createDirectoryIfMissing,
@@ -170,6 +170,12 @@ addTransitionInMap ::
   Map state (Map symbol (Set state))
 addTransitionInMap trans (p, a, q) = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a (Set.singleton q)) trans
 
+-- | Remove a set of states and their related transitions
+removeStates :: (Ord state) => NFA symbol state -> Set state -> NFA symbol state
+removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (final nfa) qs) trans'
+  where
+    trans' = Map.map (Map.map (`Set.difference` qs)) $ F.foldl' (flip Map.delete) (delta nfa) qs
+
 -- * The Arbitrary Instance
 
 instance (Ord state, Ord symbol, Arbitrary symbol, Arbitrary state) => Arbitrary (NFA symbol state) where
@@ -261,6 +267,52 @@ transitionList ::
   -- | The transition list
   [(state, symbol, state)]
 transitionList nfa = Map.toList (delta nfa) >>= \(p, a_to_states) -> Map.toList a_to_states >>= (\(a, qs) -> (p,a,) <$> Set.toList qs)
+
+-- | Returns the direct successors of a state
+getSuccs ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The state p
+  state ->
+  -- | The direct successors of p
+  Set state
+getSuccs nfa p = maybe Set.empty F.fold (Map.lookup p (delta nfa))
+
+-- | Returns the set of the accessible states
+getAccessibleStates ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The accessible states
+  Set state
+getAccessibleStates nfa = aux (Set.difference succs_of_is is) is
+  where
+    is = initial nfa
+    succs_of_is = F.foldMap (getSuccs nfa) is
+    aux nexts access
+      | Set.null nexts = access
+      | otherwise = aux (Set.difference succs_of_nexts access) $ Set.union nexts access
+      where
+        succs_of_nexts = F.foldMap (getSuccs nfa) nexts
+
+-- | Returns the set of the coaccessible states
+getCoaccessibleStates ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The coaccessible states
+  Set state
+getCoaccessibleStates = getAccessibleStates . NFA.reverse
+
+-- | Returns the set of the useful states
+getUsefulStates ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The useful states
+  Set state
+getUsefulStates nfa = getAccessibleStates nfa `Set.intersection` getCoaccessibleStates nfa
 
 -- | Tests whether a state is initial
 isInitial ::
@@ -411,3 +463,23 @@ reverse ::
 reverse nfa = NFA (final nfa) (initial nfa) trans'
   where
     trans' = F.foldl' addTransitionInMap Map.empty ((\(p, a, q) -> (q, a, p)) <$> transitionList nfa)
+
+-- * Trim operation
+
+-- | Tests whether an NFA is trim
+isTrim ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | The Boolean "A is trim"
+  Bool
+isTrim nfa = getStates nfa == getUsefulStates nfa
+
+-- | Only keeps the useful states of an NFA
+trim ::
+  (Ord symbol, Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting trim NFA
+  NFA symbol state
+trim nfa = removeStates nfa $ getStates nfa `Set.difference` getUsefulStates nfa
