@@ -43,6 +43,7 @@ library
     , directory
     , filepath
     , graphviz
+    , hspec
     , text
   default-language: Haskell2010
 
@@ -63,6 +64,7 @@ executable glushkovization-exe
     , filepath
     , glushkovization
     , graphviz
+    , hspec
     , text
   default-language: Haskell2010
 
@@ -84,5 +86,6 @@ test-suite glushkovization-test
     , filepath
     , glushkovization
     , graphviz
+    , hspec
     , text
   default-language: Haskell2010

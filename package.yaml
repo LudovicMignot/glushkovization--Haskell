@@ -27,6 +27,7 @@ dependencies:
 - text
 - directory
 - filepath
+- hspec
 
 ghc-options:
 - -Wall
