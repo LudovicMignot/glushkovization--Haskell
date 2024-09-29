@@ -18,37 +18,37 @@ genNFAAndStrings maxlen nb = do
 prop_equiv :: (Ord state1, Ord symbol, Ord state2) => NFA symbol state1 -> NFA symbol state2 -> [symbol] -> Property
 prop_equiv nfa1 nfa2 s = property $ recognizes nfa1 s == recognizes nfa2 s
 
+theGen :: Gen (NFA Char Int, [String])
+theGen = genNFAAndStrings 10 100
+
 main :: IO ()
 main = hspec $ do
   describe "makeHomogeneous" $ do
-    modifyMaxSize (const 50) $
-      it "makes an NFA homogeneous" $
-        property $
+    it "makes an NFA homogeneous" $
+      property $
+        forAll (resize 50 arbitrary) $
           \nfa -> isHomogeneous $ makeHomogeneous (nfa :: NFA Char Int)
-    modifyMaxSize (const 50) $
-      it "preserves the language" $
-        property $
-          forAll (genNFAAndStrings 10 100) $
-            \(nfa, strings) -> let nfa' = makeHomogeneous nfa in conjoin $ map (prop_equiv nfa nfa') strings
+    it "preserves the language" $
+      property $
+        forAll theGen $
+          \(nfa, strings) -> let nfa' = makeHomogeneous nfa in conjoin $ map (prop_equiv nfa nfa') strings
 
   describe "makeStandard" $ do
-    modifyMaxSize (const 50) $
-      it "makes an NFA standard" $
-        property $
+    it "makes an NFA standard" $
+      property $
+        forAll (resize 50 arbitrary) $
           \nfa -> isStandard $ makeStandard (nfa :: NFA Char Int)
-    modifyMaxSize (const 50) $
-      it "preserves the language" $
-        property $
-          forAll (genNFAAndStrings 10 100) $
-            \(nfa, strings) -> let nfa' = makeStandard nfa in conjoin $ map (prop_equiv nfa nfa') strings
+    it "preserves the language" $
+      property $
+        forAll theGen $
+          \(nfa, strings) -> let nfa' = makeStandard nfa in conjoin $ map (prop_equiv nfa nfa') strings
 
   describe "trim" $ do
-    modifyMaxSize (const 50) $
-      it "trims an NFA" $
-        property $
+    it "trims an NFA" $
+      property $
+        forAll (resize 50 arbitrary) $
           \nfa -> isTrim $ trim (nfa :: NFA Char Int)
-    modifyMaxSize (const 50) $
-      it "preserves the language" $
-        property $
-          forAll (genNFAAndStrings 10 100) $
-            \(nfa, strings) -> let nfa' = trim nfa in conjoin $ map (prop_equiv nfa nfa') strings
+    it "preserves the language" $
+      property $
+        forAll theGen $
+          \(nfa, strings) -> let nfa' = trim nfa in conjoin $ map (prop_equiv nfa nfa') strings
