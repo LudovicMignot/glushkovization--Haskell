@@ -4,6 +4,7 @@
 
 module NFA where
 
+import Control.Monad.State.Lazy
 import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldMap, foldl')
 import Data.GraphViz.Attributes
 import Data.GraphViz.Attributes.Complete
@@ -304,7 +305,27 @@ getAccessibleStates nfa = aux (Set.difference succs_of_is is) is
     succs_of_is = F.foldMap (getSuccs nfa) is
     aux nexts access
       | Set.null nexts = access
-      | otherwise = aux (Set.difference succs_of_nexts access) $ Set.union nexts access
+      | otherwise = aux (Set.difference succs_of_nexts access') access'
+      where
+        access' = Set.union nexts access
+        succs_of_nexts = F.foldMap (getSuccs nfa) nexts
+
+-- | Equivalent to getAccessibleStates, but using the State monad
+getAccessibleStates' ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The accessible states
+  Set state
+getAccessibleStates' nfa = evalState (aux $ Set.difference succs_of_is is) is
+  where
+    is = initial nfa
+    succs_of_is = F.foldMap (getSuccs nfa) is
+    aux nexts
+      | Set.null nexts = get
+      | otherwise = do
+          modify (Set.union nexts)
+          get >>= aux . Set.difference succs_of_nexts
       where
         succs_of_nexts = F.foldMap (getSuccs nfa) nexts
 
@@ -315,7 +336,7 @@ getCoaccessibleStates ::
   NFA symbol state ->
   -- | The coaccessible states
   Set state
-getCoaccessibleStates = getAccessibleStates . NFA.reverse
+getCoaccessibleStates = getAccessibleStates' . NFA.reverse
 
 -- | Returns the set of the useful states
 getUsefulStates ::
@@ -324,7 +345,7 @@ getUsefulStates ::
   NFA symbol state ->
   -- | The useful states
   Set state
-getUsefulStates nfa = getAccessibleStates nfa `Set.intersection` getCoaccessibleStates nfa
+getUsefulStates nfa = getAccessibleStates' nfa `Set.intersection` getCoaccessibleStates nfa
 
 -- | Tests whether a state is initial
 isInitial ::
@@ -418,7 +439,7 @@ makeStandard nfa =
     }
   where
     -- equivalent to nfa, where the states p are "promoted" as Just p
-    nfa_just = mapState Just nfa
+    nfa_just = NFA.mapState Just nfa
     -- equivalent to delta, where the states p are "promoted" as Just p
     delta_just = delta nfa_just
     -- the successors of the old initial states
