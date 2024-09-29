@@ -18,6 +18,9 @@ genNFAAndStrings maxlen nb = do
 prop_equiv :: (Ord state1, Ord symbol, Ord state2) => NFA symbol state1 -> NFA symbol state2 -> [symbol] -> Property
 prop_equiv nfa1 nfa2 s = property $ recognizes nfa1 s == recognizes nfa2 s
 
+prop_equiv_rev :: (Ord state1, Ord symbol, Ord state2) => NFA symbol state1 -> NFA symbol state2 -> [symbol] -> Property
+prop_equiv_rev nfa1 nfa2 s = property $ recognizes nfa1 s == recognizes nfa2 (Prelude.reverse s)
+
 theGen :: Gen (NFA Char Int, [String])
 theGen = genNFAAndStrings 10 100
 
@@ -52,3 +55,12 @@ main = hspec $ do
       property $
         forAll theGen $
           \(nfa, strings) -> let nfa' = trim nfa in conjoin $ map (prop_equiv nfa nfa') strings
+
+  describe "reverse" $ do
+    it "preserves useful states" $
+      property $
+        \nfa -> let nfa' = NFA.reverse (nfa :: NFA Char Int) in getUsefulStates nfa == getUsefulStates nfa'
+    it "reverses the language" $
+      property $
+        forAll theGen $
+          \(nfa, strings) -> let nfa' = NFA.reverse nfa in conjoin $ map (prop_equiv_rev nfa nfa') strings
