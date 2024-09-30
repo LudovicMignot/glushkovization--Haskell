@@ -25,7 +25,7 @@ theGen :: Gen (NFA Char Int, [String])
 theGen = genNFAAndStrings 10 100
 
 main :: IO ()
-main = hspec $ do
+main = hspec $ parallel $ do
   describe "makeHomogeneous" $ do
     it "makes an NFA homogeneous" $
       property $
