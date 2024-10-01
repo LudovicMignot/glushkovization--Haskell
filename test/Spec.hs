@@ -26,16 +26,6 @@ theGen = genNFAAndStrings 10 100
 
 main :: IO ()
 main = hspec $ parallel $ do
-  describe "makeHomogeneous" $ do
-    it "makes an NFA homogeneous" $
-      property $
-        forAll (resize 50 arbitrary) $
-          \nfa -> isHomogeneous $ makeHomogeneous (nfa :: NFA Char Int)
-    it "preserves the language" $
-      property $
-        forAll theGen $
-          \(nfa, strings) -> let nfa' = makeHomogeneous nfa in conjoin $ map (prop_equiv nfa nfa') strings
-
   describe "makeStandard" $ do
     it "makes an NFA standard" $
       property $
@@ -64,3 +54,18 @@ main = hspec $ parallel $ do
       property $
         forAll theGen $
           \(nfa, strings) -> let nfa' = NFA.reverse nfa in conjoin $ map (prop_equiv_rev nfa nfa') strings
+
+  describe "getAccessibleStates" $ do
+    it "is equal to getAccessibleStates'" $
+      property $
+        \nfa -> getAccessibleStates (nfa :: NFA Char Int) == getAccessibleStates' nfa
+
+  describe "makeHomogeneous" $ do
+    it "makes an NFA homogeneous" $
+      property $
+        forAll (resize 50 arbitrary) $
+          \nfa -> isHomogeneous $ makeHomogeneous (nfa :: NFA Char Int)
+    it "preserves the language" $
+      property $
+        forAll theGen $
+          \(nfa, strings) -> let nfa' = makeHomogeneous nfa in conjoin $ map (prop_equiv nfa nfa') strings
