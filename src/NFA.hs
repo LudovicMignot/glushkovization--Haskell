@@ -535,3 +535,21 @@ kosaraju1 nfa = snd $ execState (mapM_ aux $ Set.toList $ getStates nfa) (Set.em
           prepend p
     mark = modify . first . Set.insert
     prepend = modify . second . (:)
+
+-- | Computes the second step of the Kosaraju's Algorithm (search in the reversal following the list obtained from step 1)
+kosaraju2 :: (Ord state, Ord symbol) => NFA symbol state -> [state] -> [[state]]
+kosaraju2 nfa kos1List = filter (not . null) $ evalState (traverse aux kos1List) Set.empty
+  where
+    aux p = do
+      marked <- get
+      if Set.member p marked
+        then
+          return []
+        else do
+          mark p
+          fmap (p :) $ concatMapM aux $ Set.toList $ getSuccs rev_nfa p
+    mark = modify . Set.insert
+    rev_nfa = NFA.reverse nfa
+
+kosaraju :: (Ord state, Ord symbol) => NFA symbol state -> [[state]]
+kosaraju nfa = kosaraju2 nfa $ kosaraju1 nfa

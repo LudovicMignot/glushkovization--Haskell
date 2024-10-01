@@ -12,6 +12,7 @@ import NFA
     getUsefulStates,
     isHomogeneous,
     isStandard,
+    kosaraju,
     kosaraju1,
     makeHomogeneous,
     makeStandard,
@@ -96,3 +97,10 @@ runKosa1' = do
   _ <- toPngInImgDir "test_kosa1'" aut
   let theList = kosaraju1 aut
   putStrLn $ toString theList
+
+runKosa :: IO ()
+runKosa = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 3 3 25
+  _ <- toPngInImgDir "test_kosa" aut
+  let theList = kosaraju aut
+  print theList
