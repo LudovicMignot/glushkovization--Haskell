@@ -29,6 +29,7 @@ dependencies:
 - filepath
 - hspec
 - mtl
+- extra
 
 ghc-options:
 - -Wall

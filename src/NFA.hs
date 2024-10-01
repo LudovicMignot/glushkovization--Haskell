@@ -4,7 +4,10 @@
 
 module NFA where
 
+import Control.Monad (join, unless)
+import Control.Monad.Extra (concatMapM)
 import Control.Monad.State.Lazy
+import Data.Bifunctor (first, second)
 import qualified Data.Foldable as F (Foldable (foldMap'), all, fold, foldMap, foldl')
 import Data.GraphViz.Attributes
 import Data.GraphViz.Attributes.Complete
@@ -516,3 +519,19 @@ trim ::
   -- | The resulting trim NFA
   NFA symbol state
 trim nfa = removeStates nfa $ getStates nfa `Set.difference` getUsefulStates nfa
+
+-- * Computation of the orbits
+
+-- | Computes the first step of the Kosaraju's Algorithm (post order depth-first search)
+kosaraju1 :: (Ord state) => NFA symbol state -> [state]
+kosaraju1 nfa = snd $ execState (mapM_ aux $ Set.toList $ getStates nfa) (Set.empty, [])
+  where
+    aux p = do
+      (marked, _) <- get
+      unless (Set.member p marked) $
+        do
+          mark p
+          mapM_ aux $ Set.toList $ getSuccs nfa p
+          prepend p
+    mark = modify . first . Set.insert
+    prepend = modify . second . (:)

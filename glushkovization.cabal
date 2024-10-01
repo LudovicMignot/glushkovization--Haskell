@@ -41,6 +41,7 @@ library
     , base >=4.7 && <5
     , containers
     , directory
+    , extra
     , filepath
     , graphviz
     , hspec
@@ -62,6 +63,7 @@ executable glushkovization-exe
     , base >=4.7 && <5
     , containers
     , directory
+    , extra
     , filepath
     , glushkovization
     , graphviz
@@ -85,6 +87,7 @@ test-suite glushkovization-test
     , base >=4.7 && <5
     , containers
     , directory
+    , extra
     , filepath
     , glushkovization
     , graphviz

@@ -1,7 +1,10 @@
 module Test where
 
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import NFA
-  ( NFA,
+  ( NFA (NFA),
+    addTransitionInMap,
     generateHomogeneousNFA,
     generateNFA,
     generateNFASuchThat,
@@ -9,6 +12,7 @@ import NFA
     getUsefulStates,
     isHomogeneous,
     isStandard,
+    kosaraju1,
     makeHomogeneous,
     makeStandard,
     nfaToDot,
@@ -77,3 +81,18 @@ runTrimTest = do
   _ <- toPngInImgDir "test_trim_result" $ trim aut
   let us = getUsefulStates aut
   putStrLn $ toString us
+
+runKosa1 :: IO ()
+runKosa1 = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 3 3 10
+  _ <- toPngInImgDir "test_kosa1" aut
+  let theList = kosaraju1 aut
+  putStrLn $ toString theList
+
+runKosa1' :: IO ()
+runKosa1' = do
+  let trans = [(1, 'a', 2), (4, 'a', 1), (3, 'a', 4), (5, 'a', 3), (4, 'a', 5)]
+  let aut = (NFA (Set.singleton 1) Set.empty (foldr (flip addTransitionInMap) Map.empty trans) :: NFA Char Int)
+  _ <- toPngInImgDir "test_kosa1'" aut
+  let theList = kosaraju1 aut
+  putStrLn $ toString theList
