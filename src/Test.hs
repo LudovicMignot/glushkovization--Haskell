@@ -5,21 +5,22 @@ import qualified Data.Set as Set
 import NFA
   ( NFA (NFA),
     addTransitionInMap,
-    generateHomogeneousNFA,
     generateNFA,
     generateNFASuchThat,
-    generateStandardNFA,
-    getUsefulStates,
-    isHomogeneous,
-    isStandard,
-    kosaraju,
-    kosaraju1,
-    makeHomogeneous,
-    makeStandard,
-    nfaToDot,
     reverse,
-    toPngInImgDir,
-    trim,
+  )
+import NFAAccessibility (getUsefulStates, trim)
+import NFADotRepr (nfaToDot, toPngInImgDir)
+import NFAHomogeneity
+  ( generateHomogeneousNFA,
+    isHomogeneous,
+    makeHomogeneous,
+  )
+import NFAOrbit (kosaraju, kosaraju1)
+import NFAStandard
+  ( generateStandardNFA,
+    isStandard,
+    makeStandard,
   )
 import ToString (toString)
 

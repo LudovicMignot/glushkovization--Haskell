@@ -1,8 +1,27 @@
-import Debug.Trace
 import NFA
-import Test.Hspec
-import Test.Hspec.QuickCheck (modifyMaxSize)
+import NFAAccessibility
+  ( getAccessibleStates,
+    getAccessibleStates',
+    getUsefulStates,
+    isTrim,
+    trim,
+  )
+import NFAHomogeneity (isHomogeneous, makeHomogeneous)
+import NFAStandard (isStandard, makeStandard)
+import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
+  ( Arbitrary (arbitrary),
+    Gen,
+    Property,
+    Testable (property),
+    choose,
+    conjoin,
+    elements,
+    forAll,
+    resize,
+    sized,
+    vectorOf,
+  )
 
 genString :: Gen String
 genString = sized $ \n -> do

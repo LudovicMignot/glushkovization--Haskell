@@ -27,6 +27,11 @@ library
   exposed-modules:
       Lib
       NFA
+      NFAAccessibility
+      NFADotRepr
+      NFAHomogeneity
+      NFAOrbit
+      NFAStandard
       Test
       ToString
   other-modules:
