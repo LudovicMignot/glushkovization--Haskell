@@ -7,6 +7,7 @@ import NFAAccessibility
     trim,
   )
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
+import NFAOrbit (kosarajuSet)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -41,7 +42,7 @@ prop_equiv_rev :: (Ord state1, Ord symbol, Ord state2) => NFA symbol state1 -> N
 prop_equiv_rev nfa1 nfa2 s = property $ recognizes nfa1 s == recognizes nfa2 (Prelude.reverse s)
 
 theGen :: Gen (NFA Char Int, [String])
-theGen = genNFAAndStrings 10 100
+theGen = genNFAAndStrings 15 250
 
 main :: IO ()
 main = hspec $ parallel $ do
@@ -66,6 +67,9 @@ main = hspec $ parallel $ do
           \(nfa, strings) -> let nfa' = trim nfa in conjoin $ map (prop_equiv nfa nfa') strings
 
   describe "reverse" $ do
+    it "preserves the orbits" $
+      property $
+        \nfa -> let nfa' = NFA.reverse (nfa :: NFA Char Int) in kosarajuSet nfa == kosarajuSet nfa'
     it "preserves useful states" $
       property $
         \nfa -> let nfa' = NFA.reverse (nfa :: NFA Char Int) in getUsefulStates nfa == getUsefulStates nfa'
