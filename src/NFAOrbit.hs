@@ -14,7 +14,7 @@ import Data.Function ((&))
 import qualified Data.Map.Lazy as Map
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
-import qualified Data.Set as Set (delete, difference, empty, filter, foldl', fromList, insert, intersection, map, member, singleton, toList)
+import qualified Data.Set as Set (delete, difference, empty, filter, foldl', fromList, insert, intersection, map, member, singleton, toList, union)
 import NFA (NFA (NFA, final), delta, getStates, getSuccs, initial, isFinal, isInitial, mapState, reverse)
 
 -- * Computation of the orbits
@@ -100,9 +100,7 @@ externalIsolation nfa orbit g = NFA initial' final' delta'
     orbit_l = Set.map Left orbit
     others_l = Set.map Left $ getStates nfa `Set.difference` orbit
     nfa' = mapState Left nfa
-    initial'
-      | isInitial nfa g = Set.insert (Right g) $ initial nfa'
-      | otherwise = initial nfa'
+    initial' = Set.union (initial nfa') $ Set.map Right $ Set.intersection orbit $ initial nfa
     final'
       | isFinal nfa g = Set.insert (Right g) $ Set.delete (Left g) $ final nfa'
       | otherwise = final nfa'

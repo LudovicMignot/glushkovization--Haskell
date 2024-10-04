@@ -71,4 +71,8 @@ instance (ToString a) => ToString [a] where
 
 instance (ToString a) => ToString (Maybe a) where
   toString Nothing = "Nothing"
-  toString (Just x) = "Just" ++ toString x
+  toString (Just x) = "Just " ++ toString x
+
+instance (ToString a, ToString b) => ToString (Either a b) where
+  toString (Left a) = "Left " ++ toString a
+  toString (Right b) = "Right " ++ toString b

@@ -1,5 +1,6 @@
 module Test where
 
+import qualified Data.Foldable as Set
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import NFA
@@ -18,7 +19,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (kosaraju, kosaraju1)
+import NFAOrbit (externalIsolation, kosaraju, kosaraju1, kosarajuSet, outgates)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -124,3 +125,22 @@ runComplete = do
   _ <- toPngInImgDir "test_complete1" aut
   _ <- toPngInImgDir "test_complete2" $ complete aut
   print "Done"
+
+runExternalIsolation :: IO ()
+runExternalIsolation = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  _ <- toPngInImgDir "test_extIso1" aut
+  let orbits = kosarajuSet aut
+  let orbit = Set.find (\o -> Set.size o >= 2) orbits
+  case orbit of
+    Nothing -> print "No size >=2 orbit"
+    Just o -> do
+      print o
+      let m_g = Set.lookupMax $ outgates aut o
+      case m_g of
+        Nothing -> print "No gate"
+        Just g -> do
+          let aut' = externalIsolation aut o g
+          print g
+          _ <- toPngInImgDir "test_extIso2" aut'
+          print "Done"
