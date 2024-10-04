@@ -158,6 +158,17 @@ isInitial ::
   Bool
 isInitial nfa p = Set.member p $ initial nfa
 
+-- | Tests whether a state is final
+isFinal ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The state p
+  state ->
+  -- | The Boolean "p is final"
+  Bool
+isFinal nfa p = Set.member p $ final nfa
+
 -- * Actions of a symbol / a word over a state / set of states
 
 -- | Computes the states of an NFA reached from a state reading a symbol

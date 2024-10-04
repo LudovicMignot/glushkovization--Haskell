@@ -9,9 +9,13 @@ import Control.Monad.State.Lazy
     modify,
   )
 import Data.Bifunctor (first, second)
+import qualified Data.Foldable as F
+import Data.Function ((&))
+import qualified Data.Map.Lazy as Map
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
-import qualified Data.Set as Set (empty, fromList, insert, member, toList)
-import NFA (NFA, getStates, getSuccs, reverse)
+import qualified Data.Set as Set (delete, difference, empty, filter, foldl', fromList, insert, intersection, map, member, singleton, toList)
+import NFA (NFA (NFA, final), delta, getStates, getSuccs, initial, isFinal, isInitial, mapState, reverse)
 
 -- * Computation of the orbits
 
@@ -61,3 +65,54 @@ kosarajuSet ::
   -- | The orbits of A
   Set (Set state)
 kosarajuSet nfa = Set.fromList $ Set.fromList <$> kosaraju nfa
+
+-- * Computation of the outgates
+
+-- | For a given set O of states, returns the states of O that are final or linked with a state not in O.
+-- If O is an orbit, returns its outgates
+outgates ::
+  (Ord state) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | A (possibly) orbit O of A
+  Set state ->
+  -- | The set of the (possibly) outgates of O
+  Set state
+outgates nfa orbit = Set.filter (\p -> isFinal nfa p || F.any (`Set.member` orbit) (getSuccs nfa p)) orbit
+
+-- | For a given set O of states and a given state g, adds a clone of O where g is the only state which is final or linked with the outside of O.
+-- The original O is not final nor linked with the outside of O anymore.
+-- If O is an orbit and g a state of O, performs the external isolation of O
+externalIsolation ::
+  (Ord state) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | A (possibly) orbit O of A
+  Set state ->
+  -- | A state g
+  state ->
+  -- | The (possible) external isolation of g
+  NFA symbol (Either state state)
+externalIsolation nfa orbit g = NFA initial' final' delta'
+  where
+    toRight (Left s) = Right s
+    toRight s = s
+    orbit_l = Set.map Left orbit
+    others_l = Set.map Left $ getStates nfa `Set.difference` orbit
+    nfa' = mapState Left nfa
+    initial'
+      | isInitial nfa g = Set.insert (Right g) $ initial nfa'
+      | otherwise = initial nfa'
+    final'
+      | isFinal nfa g = Set.insert (Right g) $ Set.delete (Left g) $ final nfa'
+      | otherwise = final nfa'
+    delta' =
+      delta nfa'
+        -- successors of "old" g are restricted to the "old" orbit
+        & Map.adjust (Map.map (Set.intersection orbit_l)) (Left g)
+        -- successors of "new" g are the "new" ones in the clone, and the "old" external ones
+        & Map.insert (Right g) (maybe Map.empty (Map.map (Set.map (\s -> if Set.member s orbit_l then toRight s else s))) (Map.lookup (Left g) (delta nfa')))
+        -- successors of "new" o' are restricted to the "new" orbit, successors of "old" o are not modified
+        & flip (Set.foldl' (\trans o -> Map.insert (Right o) (maybe Map.empty (Map.map (Set.map Right . Set.filter (`Set.member` orbit))) (Map.lookup o (delta nfa))) trans)) (Set.delete g orbit)
+        -- for the other "old" states, add a link to o' if o is a successor
+        & flip (Set.foldl' (flip (Map.adjust (Map.map (F.foldMap (\p -> if Set.member p orbit_l then Set.fromList [p, toRight p] else Set.singleton p)))))) others_l
