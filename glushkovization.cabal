@@ -28,6 +28,8 @@ library
       Lib
       NFA
       NFAAccessibility
+      NFABoolComb
+      NFAComplete
       NFADotRepr
       NFAHomogeneity
       NFAOrbit

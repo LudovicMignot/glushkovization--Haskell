@@ -10,6 +10,8 @@ import NFA
     reverse,
   )
 import NFAAccessibility (getUsefulStates, trim)
+import NFABoolComb (symDiff)
+import NFAComplete (complete)
 import NFADotRepr (nfaToDot, toPngInImgDir)
 import NFAHomogeneity
   ( generateHomogeneousNFA,
@@ -105,3 +107,20 @@ runKosa = do
   _ <- toPngInImgDir "test_kosa" aut
   let theList = kosaraju aut
   print theList
+
+runSymmDiff :: IO ()
+runSymmDiff = do
+  aut1 <- trim <$> generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 2 2 10
+  aut2 <- trim <$> generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 2 2 10
+  let aut3 = trim $ symDiff aut1 aut2
+  _ <- toPngInImgDir "test_symdiff1" aut1
+  _ <- toPngInImgDir "test_symdiff2" aut2
+  _ <- toPngInImgDir "test_symdiff3" aut3
+  print "Done"
+
+runComplete :: IO ()
+runComplete = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 7 :: Int] 2 2 10
+  _ <- toPngInImgDir "test_complete1" aut
+  _ <- toPngInImgDir "test_complete2" $ complete aut
+  print "Done"
