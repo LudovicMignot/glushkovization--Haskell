@@ -1,6 +1,6 @@
 module Test where
 
-import qualified Data.Foldable as Set
+import qualified Data.Foldable as F
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import NFA
@@ -19,12 +19,13 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, kosaraju, kosaraju1, kosarajuSet, outgates)
+import NFAOrbit (externalIsolation, internalIsolation, kosaraju, kosaraju1, kosarajuSet, outgates)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
     makeStandard,
   )
+import Test.QuickCheck (elements, generate)
 import ToString (toString)
 
 randomAut :: IO (NFA Char Int)
@@ -131,7 +132,7 @@ runExternalIsolation = do
   aut <- generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
   _ <- toPngInImgDir "test_extIso1" aut
   let orbits = kosarajuSet aut
-  let orbit = Set.find (\o -> Set.size o >= 2) orbits
+  let orbit = F.find (\o -> Set.size o >= 2) orbits
   case orbit of
     Nothing -> print "No size >=2 orbit"
     Just o -> do
@@ -144,3 +145,19 @@ runExternalIsolation = do
           print g
           _ <- toPngInImgDir "test_extIso2" aut'
           print "Done"
+
+runInternalIsolation :: IO ()
+runInternalIsolation = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  _ <- toPngInImgDir "test_intIso1" aut
+  let orbits = kosarajuSet aut
+  let orbit = F.find (\o -> Set.size o >= 2) orbits
+  case orbit of
+    Nothing -> print "No size >=2 orbit"
+    Just o -> do
+      print o
+      g <- generate $ elements $ Set.toList o
+      print g
+      let aut' = internalIsolation aut o g
+      _ <- toPngInImgDir "test_intIso2" aut'
+      print "Done"

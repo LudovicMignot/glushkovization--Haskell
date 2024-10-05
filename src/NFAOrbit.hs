@@ -12,10 +12,9 @@ import Data.Bifunctor (first, second)
 import qualified Data.Foldable as F
 import Data.Function ((&))
 import qualified Data.Map.Lazy as Map
-import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set (delete, difference, empty, filter, foldl', fromList, insert, intersection, map, member, singleton, toList, union)
-import NFA (NFA (NFA, final), delta, getStates, getSuccs, initial, isFinal, isInitial, mapState, reverse)
+import NFA (NFA (NFA, final), delta, getStates, getSuccs, initial, isFinal, mapState, reverse)
 
 -- * Computation of the orbits
 
@@ -80,8 +79,10 @@ outgates ::
   Set state
 outgates nfa orbit = Set.filter (\p -> isFinal nfa p || F.any (`Set.member` orbit) (getSuccs nfa p)) orbit
 
+-- * Isolation functions
+
 -- | For a given set O of states and a given state g, adds a clone of O where g is the only state which is final or linked with the outside of O.
--- The original O is not final nor linked with the outside of O anymore.
+-- The original g is not final nor linked with the "outside" of O anymore.
 -- If O is an orbit and g a state of O, performs the external isolation of O
 externalIsolation ::
   (Ord state) =>
@@ -95,8 +96,7 @@ externalIsolation ::
   NFA symbol (Either state state)
 externalIsolation nfa orbit g = NFA initial' final' delta'
   where
-    toRight (Left s) = Right s
-    toRight s = s
+    toRight = either Right Right
     orbit_l = Set.map Left orbit
     others_l = Set.map Left $ getStates nfa `Set.difference` orbit
     nfa' = mapState Left nfa
@@ -114,3 +114,33 @@ externalIsolation nfa orbit g = NFA initial' final' delta'
         & flip (Set.foldl' (\trans o -> Map.insert (Right o) (maybe Map.empty (Map.map (Set.map Right . Set.filter (`Set.member` orbit))) (Map.lookup o (delta nfa))) trans)) (Set.delete g orbit)
         -- for the other "old" states, add a link to o' if o is a successor
         & flip (Set.foldl' (flip (Map.adjust (Map.map (F.foldMap (\p -> if Set.member p orbit_l then Set.fromList [p, toRight p] else Set.singleton p)))))) others_l
+
+-- | For a given set O of states and a given state g, adds a clone of O \ {g}.
+-- The original O has only one incoming link with the outside through g.
+-- If O is an orbit and g a state of O, performs the internal isolation of O
+internalIsolation ::
+  (Ord state) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | A (possibly) orbit O of A
+  Set state ->
+  -- | A state g
+  state ->
+  -- | The (possible) internal isolation of g
+  NFA symbol (Either state state)
+internalIsolation nfa orbit g = NFA initial' final' delta'
+  where
+    nfa' = mapState Left nfa
+    toRight = either Right Right
+    o_no_g = Set.delete g orbit
+    o_no_g_l = Set.map Left o_no_g
+    others_l = Set.map Left $ getStates nfa `Set.difference` orbit
+    initial' = Set.union (initial nfa' `Set.difference` o_no_g_l) $ Set.map Right $ initial nfa `Set.intersection` o_no_g
+    final' = Set.union (final nfa') $ Set.map Right $ final nfa `Set.intersection` o_no_g
+    delta' =
+      delta nfa'
+        -- The "new" o' are linked only to the "old" O through g, to the "new" o' if it was linked to an o,
+        -- and to the other "old" states outside of O
+        & flip (Set.foldl' (\trans o -> Map.insert (Right o) (maybe Map.empty (Map.map (Set.map (\p -> if Set.member p o_no_g_l then toRight p else p))) (Map.lookup (Left o) (delta nfa'))) trans)) o_no_g
+        -- The "old" other states outise of O are linked to the "new" o' if they were linked to an old "o"
+        & flip (Set.foldl' (flip (Map.adjust (Map.map (Set.map (\p -> if Set.member p o_no_g_l then toRight p else p)))))) others_l
