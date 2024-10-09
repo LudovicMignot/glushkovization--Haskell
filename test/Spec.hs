@@ -80,13 +80,13 @@ main = hspec $ parallel $ do
     it "preserves the language" $
       property $
         forAll (resize 20 genOrbitsAndGates) $
-          \(nfa, o, g) -> let nfa' = externalIsolation nfa o g in Set.null $ getUsefulStates $ trim $ symDiff (nfa :: NFA Char Int) nfa'
+          \(nfa, o, g) -> let nfa' = externalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "internalIsolation" $ do
     it "preserves the language" $
       property $
         forAll (resize 20 genOrbitsAndGates') $
-          \(nfa, o, g) -> let nfa' = internalIsolation nfa o g in Set.null $ getUsefulStates $ trim $ symDiff (nfa :: NFA Char Int) nfa'
+          \(nfa, o, g) -> let nfa' = internalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "symDiff" $ parallel $ do
     it "computes the symmetric difference" $
@@ -109,7 +109,7 @@ main = hspec $ parallel $ do
     it "preserves the language" $
       property $
         forAll (resize 30 arbitrary) $
-          \nfa -> Set.null $ getUsefulStates $ trim $ symDiff (nfa :: NFA Char Int) $ makeStandard nfa
+          \nfa -> Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) $ makeStandard nfa
 
   describe "trim" $ parallel $ do
     it "trims an NFA" $
@@ -123,7 +123,7 @@ main = hspec $ parallel $ do
     it "preserves the language" $
       property $
         forAll (resize 30 arbitrary) $
-          \nfa -> Set.null $ getUsefulStates $ trim $ symDiff (nfa :: NFA Char Int) $ trim nfa
+          \nfa -> Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) $ trim nfa
 
   describe "reverse" $ parallel $ do
     it "preserves the orbits" $
@@ -139,7 +139,7 @@ main = hspec $ parallel $ do
     it "preserves the language if applied twice" $
       property $
         forAll (resize 30 arbitrary) $
-          \nfa -> Set.null $ getUsefulStates $ trim $ symDiff (nfa :: NFA Char Int) $ NFA.reverse $ NFA.reverse nfa
+          \nfa -> Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) $ NFA.reverse $ NFA.reverse nfa
 
   describe "getAccessibleStates" $ parallel $ do
     it "is equal to getAccessibleStates'" $
@@ -158,4 +158,4 @@ main = hspec $ parallel $ do
     it "preserves the language" $
       property $
         forAll (resize 30 arbitrary) $
-          \nfa -> Set.null $ getUsefulStates $ trim $ symDiff (nfa :: NFA Char Int) $ makeHomogeneous nfa
+          \nfa -> Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) $ makeHomogeneous nfa
