@@ -19,7 +19,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, internalIsolation, kosaraju, kosaraju1, kosarajuSet, outgates)
+import NFAOrbit (externalIsolation, internalIsolation, kosaraju, kosaraju1, kosarajuSet, orbitalSubstitution, outgates)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -161,3 +161,16 @@ runInternalIsolation = do
       let aut' = internalIsolation aut o g
       _ <- toPngInImgDir "test_intIso2" aut'
       print "Done"
+
+runOrbSubst :: IO ()
+runOrbSubst = do
+  let trans = foldr (flip addTransitionInMap) Map.empty [(1, 'a', 2), (1, 'b', 5), (2, 'a', 4), (3, 'a', 2), (4, 'a', 3), (4, 'c', 6), (4, 'a', 7), (5, 'a', 2), (5, 'c', 6), (6, 'a', 7), (7, 'c', 6)]
+  let aut = (NFA (Set.singleton 1) (Set.fromList [4, 7]) trans :: NFA Char Int)
+  _ <- toPngInImgDir "test_subst" aut
+  let o = Set.fromList [2, 3, 4]
+  let trans' = foldr (flip addTransitionInMap) Map.empty [(1, 'a', 2), (1, 'b', 3), (2, 'c', 4), (3, 'a', 4), (4, 'b', 3)]
+  let aut' = (NFA (Set.singleton 1) (Set.fromList [2, 3]) trans' :: NFA Char Int)
+  _ <- toPngInImgDir "test_subst'" aut'
+  let aut'' = orbitalSubstitution aut o aut'
+  _ <- toPngInImgDir "test_subst''" aut''
+  putStrLn "Done"

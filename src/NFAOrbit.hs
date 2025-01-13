@@ -13,8 +13,8 @@ import qualified Data.Foldable as F
 import Data.Function ((&))
 import qualified Data.Map.Lazy as Map
 import Data.Set (Set)
-import qualified Data.Set as Set (delete, difference, empty, filter, foldl', fromList, insert, intersection, map, member, singleton, toList, union)
-import NFA (NFA (NFA, final), delta, getStates, getSuccs, initial, isFinal, mapState, reverse)
+import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, foldl', fromList, insert, intersection, map, member, singleton, toList, union)
+import NFA (NFA (NFA, final), addTransitionInMap, delta, getStates, getSuccs, getSuccsWithSymbol, initial, isFinal, mapState, removeStates, reverse)
 
 -- * Computation of the orbits
 
@@ -142,5 +142,43 @@ internalIsolation nfa orbit g = NFA initial' final' delta'
         -- The "new" o' are linked only to the "old" O through g, to the "new" o' if it was linked to an o,
         -- and to the other "old" states outside of O
         & flip (Set.foldl' (\trans o -> Map.insert (Right o) (maybe Map.empty (Map.map (Set.map (\p -> if Set.member p o_no_g_l then toRight p else p))) (Map.lookup (Left o) (delta nfa'))) trans)) o_no_g
-        -- The "old" other states outise of O are linked to the "new" o' if they were linked to an old "o"
+        -- The "old" other states outside of O are linked to the "new" o' if they were linked to an old "o"
         & flip (Set.foldl' (flip (Map.adjust (Map.map (Set.map (\p -> if Set.member p o_no_g_l then toRight p else p)))))) others_l
+
+-- * Orbital substitution functions
+
+-- | Substitutes an orbit O of a standard NFA A by a standard orbital automaton A'
+orbitalSubstitution ::
+  (Ord state, Ord state', Ord symbol) =>
+  -- | the NFA A
+  NFA symbol state ->
+  -- | A (possibly) isolated orbit O of A
+  Set state ->
+  -- | A standard automaton A'
+  NFA symbol state' ->
+  -- | The resulting automaton
+  NFA symbol (Either state state')
+orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'') o_l
+  where
+    nfa_l = mapState Left nfa
+    first_nfa' = F.foldMap (getSuccs nfa') $ initial nfa'
+    out_o = outgates nfa o
+    nfa_r = mapState Right $ removeStates nfa' $ initial nfa'
+    others_l = Set.map Left $ getStates nfa `Set.difference` o
+    o_l = Set.map Left o
+    succs_out_o = F.foldMap (getSuccsWithSymbol nfa) out_o
+    final' = final nfa'
+    initial'' = initial nfa_l
+    final''
+      | final nfa `Set.disjoint` o = final nfa_l
+      | otherwise = final nfa_l `Set.union` Set.map Right (final nfa')
+    delta'' =
+      -- the new transitions are made of the unions of the transitions of the two automata A and A'
+      delta nfa_l `Map.union` delta nfa_r
+        -- for any predecessor of the ingates of O, we add the successors of the initial state of A'
+        & flip (Set.foldl' (flip (Map.adjust (Map.map (F.foldMap (\p -> if Set.member p o_l then Set.map Right first_nfa' else Set.singleton p)))))) others_l
+        -- for any final state of A', we add the successors of the outgate of A'
+        & flip
+          ( Set.foldl' (flip (\f' -> flip (Set.foldl' (flip (\(state, symbol) -> flip addTransitionInMap (Right f', symbol, Left state)))) succs_out_o))
+          )
+          final'

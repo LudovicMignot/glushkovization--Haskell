@@ -37,6 +37,21 @@ addTransitionInMap ::
   Map state (Map symbol (Set state))
 addTransitionInMap trans (p, a, q) = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a (Set.singleton q)) trans
 
+-- | Adds to the successors of a state p, by a symbol a, the states in qs
+addSuccsInMap ::
+  (Ord symbol, Ord state) =>
+  -- | The transition Map
+  Map state (Map symbol (Set state)) ->
+  -- | The state p
+  state ->
+  -- | The symbol a
+  symbol ->
+  -- | The set of states qs
+  Set state ->
+  -- | The resulting transition Map
+  Map state (Map symbol (Set state))
+addSuccsInMap trans p a qs = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a qs) trans
+
 -- | Remove a set of states and their related transitions
 removeStates :: (Ord state) => NFA symbol state -> Set state -> NFA symbol state
 removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (final nfa) qs) trans'
@@ -146,6 +161,18 @@ getSuccs ::
   -- | The direct successors of p
   Set state
 getSuccs nfa p = maybe Set.empty F.fold (Map.lookup p (delta nfa))
+
+-- | Returns the direct predecessors of a state, in a couple with the symbol that leads to the state,
+-- if the NFA is homogeneous
+getSuccsWithSymbol ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The state p
+  state ->
+  -- | The direct successors of p
+  Set (state, symbol)
+getSuccsWithSymbol nfa p = maybe Set.empty (Map.foldMapWithKey (\symb -> Set.map (,symb))) $ Map.lookup p $ delta nfa
 
 -- | Tests whether a state is initial
 isInitial ::
