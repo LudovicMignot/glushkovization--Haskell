@@ -168,9 +168,11 @@ runOrbSubst = do
   let aut = (NFA (Set.singleton 1) (Set.fromList [4, 7]) trans :: NFA Char Int)
   _ <- toPngInImgDir "test_subst" aut
   let o = Set.fromList [2, 3, 4]
+  let o_o = outgates aut o
   let trans' = foldr (flip addTransitionInMap) Map.empty [(1, 'a', 2), (1, 'b', 3), (2, 'c', 4), (3, 'a', 4), (4, 'b', 3)]
   let aut' = (NFA (Set.singleton 1) (Set.fromList [2, 3]) trans' :: NFA Char Int)
   _ <- toPngInImgDir "test_subst'" aut'
   let aut'' = orbitalSubstitution aut o aut'
   _ <- toPngInImgDir "test_subst''" aut''
+  print o_o
   putStrLn "Done"

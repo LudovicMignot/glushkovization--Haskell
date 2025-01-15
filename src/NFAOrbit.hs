@@ -77,7 +77,7 @@ outgates ::
   Set state ->
   -- | The set of the (possibly) outgates of O
   Set state
-outgates nfa orbit = Set.filter (\p -> isFinal nfa p || F.any (`Set.member` orbit) (getSuccs nfa p)) orbit
+outgates nfa orbit = Set.filter (\p -> isFinal nfa p || F.any (not . (`Set.member` orbit)) (getSuccs nfa p)) orbit
 
 -- * Isolation functions
 
