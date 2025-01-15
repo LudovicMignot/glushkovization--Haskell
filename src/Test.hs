@@ -8,6 +8,7 @@ import NFA
     addTransitionInMap,
     generateNFA,
     generateNFASuchThat,
+    getStates,
     reverse,
   )
 import NFAAccessibility (getUsefulStates, trim)
@@ -19,7 +20,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, internalIsolation, kosaraju, kosaraju1, kosarajuSet, orbitalSubstitution, outgates)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalSubstitution, outgates)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -168,11 +169,51 @@ runOrbSubst = do
   let aut = (NFA (Set.singleton 1) (Set.fromList [4, 7]) trans :: NFA Char Int)
   _ <- toPngInImgDir "test_subst" aut
   let o = Set.fromList [2, 3, 4]
+  let o_i = ingates aut o
   let o_o = outgates aut o
   let trans' = foldr (flip addTransitionInMap) Map.empty [(1, 'a', 2), (1, 'b', 3), (2, 'c', 4), (3, 'a', 4), (4, 'b', 3)]
   let aut' = (NFA (Set.singleton 1) (Set.fromList [2, 3]) trans' :: NFA Char Int)
   _ <- toPngInImgDir "test_subst'" aut'
   let aut'' = orbitalSubstitution aut o aut'
   _ <- toPngInImgDir "test_subst''" aut''
+  print o_i
   print o_o
   putStrLn "Done"
+
+runInOutGates :: IO ()
+runInOutGates = do
+  aut <- generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  let orbits = kosarajuSet aut
+  let orbit = F.find (\o -> Set.size o >= 2) orbits
+  case orbit of
+    Nothing -> print "No size >=2 orbit"
+    Just o -> do
+      _ <- toPngInImgDir "test_gates" aut
+      print o
+      print $ outgates aut o
+      print $ ingates aut o
+      print "Done"
+
+runIsolationStep :: IO ()
+runIsolationStep = do
+  aut <- makeStandard . trim <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  _ <- toPngInImgDir "test_isolation" aut
+  let aut' = orbitalIsolationNaiveStep aut
+  _ <- toPngInImgDir "test_isolation2" aut'
+  let aut'' = orbitalIsolationNaiveStep aut'
+  _ <- toPngInImgDir "test_isolation3" aut''
+  let aut''' = orbitalIsolationNaiveStep aut''
+  _ <- toPngInImgDir "test_isolation4" aut'''
+  let aut'''' = orbitalIsolationNaiveStep aut'''
+  _ <- toPngInImgDir "test_isolation5" aut''''
+  print "Done"
+
+runIsolation :: IO ()
+runIsolation = do
+  aut <- makeStandard . trim <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  _ <- toPngInImgDir "test_isolationTotal" aut
+  let aut' = orbitalIsolationNaive aut
+  _ <- toPngInImgDir "test_isolationTotal2" aut'
+  print $ F.length $ getStates aut
+  print $ F.length $ getStates aut'
+  print "Done"

@@ -50,6 +50,7 @@ library
     , directory
     , extra
     , filepath
+    , free
     , graphviz
     , hspec
     , mtl
@@ -72,6 +73,7 @@ executable glushkovization-exe
     , directory
     , extra
     , filepath
+    , free
     , glushkovization
     , graphviz
     , hspec
@@ -96,6 +98,7 @@ test-suite glushkovization-test
     , directory
     , extra
     , filepath
+    , free
     , glushkovization
     , graphviz
     , hspec

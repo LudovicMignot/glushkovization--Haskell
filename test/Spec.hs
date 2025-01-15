@@ -11,7 +11,7 @@ import NFAAccessibility
   )
 import NFABoolComb (symDiff)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (externalIsolation, internalIsolation, kosarajuSet, outgates)
+import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, outgates)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -51,16 +51,16 @@ genMaybeOrbitsAndGates = do
 genOrbitsAndGates :: Gen (NFA Char Int, Set.Set Int, Int)
 genOrbitsAndGates = (\(a, o, g) -> (a, fromJust o, fromJust g)) <$> genMaybeOrbitsAndGates `suchThat` (\(_, o, g) -> isJust o && isJust g)
 
-genMaybeOrbitsAndGates' :: Gen (NFA Char Int, Maybe (Set.Set Int), Maybe Int)
-genMaybeOrbitsAndGates' = do
+genMaybeOrbitsAndState :: Gen (NFA Char Int, Maybe (Set.Set Int), Maybe Int)
+genMaybeOrbitsAndState = do
   nfa <- (arbitrary :: Gen (NFA Char Int))
   let orbits = kosarajuSet nfa
   let m_orbit = F.find (\o -> Set.size o >= 2) orbits
   let m_g = m_orbit >>= Set.lookupMax
   return (nfa, m_orbit, m_g)
 
-genOrbitsAndGates' :: Gen (NFA Char Int, Set.Set Int, Int)
-genOrbitsAndGates' = (\(a, o, g) -> (a, fromJust o, fromJust g)) <$> genMaybeOrbitsAndGates' `suchThat` (\(_, o, g) -> isJust o && isJust g)
+genOrbitsAndState :: Gen (NFA Char Int, Set.Set Int, Int)
+genOrbitsAndState = (\(a, o, g) -> (a, fromJust o, fromJust g)) <$> genMaybeOrbitsAndState `suchThat` (\(_, o, g) -> isJust o && isJust g)
 
 prop_equiv :: (Ord state1, Ord symbol, Ord state2) => NFA symbol state1 -> NFA symbol state2 -> [symbol] -> Property
 prop_equiv nfa1 nfa2 s = property $ recognizes nfa1 s == recognizes nfa2 s
@@ -76,6 +76,24 @@ prop_symDiff nfa1 nfa2 nfa3 s = recognizes nfa3 s == (recognizes nfa1 s /= recog
 
 main :: IO ()
 main = hspec $ parallel $ do
+  -- describe "orbitalIsolation" $ do
+  --   it "preserves the language" $
+  --     property $
+  --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
+  --         \nfa -> let nfa' = orbitalIsolationNaive nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+
+  -- describe "orbitalIsolation" $ do
+  --   it "makes orbit isolated" $
+  --     property $
+  --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
+  --         \nfa -> isIsolatedNFA $ orbitalIsolationNaive nfa
+
+  describe "orbitalIsolationStep" $ do
+    it "preserves the language" $
+      property $
+        forAll (resize 20 arbitrary :: Gen (NFA Char Int)) $
+          \nfa -> let nfa' = orbitalIsolationNaiveStep nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+
   describe "externalIsolation" $ do
     it "preserves the language" $
       property $
@@ -85,7 +103,7 @@ main = hspec $ parallel $ do
   describe "internalIsolation" $ do
     it "preserves the language" $
       property $
-        forAll (resize 20 genOrbitsAndGates') $
+        forAll (resize 20 genOrbitsAndState) $
           \(nfa, o, g) -> let nfa' = internalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "symDiff" $ parallel $ do

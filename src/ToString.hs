@@ -1,9 +1,14 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module ToString where
 
+import Control.Monad.Free (Free (Free, Pure))
 import Data.Char (toUpper)
 import Data.List (intercalate)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import NFAOrbit (FreeEither, MonoEither (MonoEither))
 
 -- | String conversion from a type
 class ToString a where
@@ -76,3 +81,10 @@ instance (ToString a) => ToString (Maybe a) where
 instance (ToString a, ToString b) => ToString (Either a b) where
   toString (Left a) = "Left " ++ toString a
   toString (Right b) = "Right " ++ toString b
+
+instance (ToString a) => ToString (MonoEither a) where
+  toString (MonoEither a) = toString a
+
+instance (ToString a) => ToString (FreeEither a) where
+  toString (Pure a) = toString a
+  toString (Free b) = toString b

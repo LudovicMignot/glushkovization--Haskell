@@ -30,6 +30,7 @@ dependencies:
 - hspec
 - mtl
 - extra
+- free
 
 ghc-options:
 - -Wall

@@ -5,13 +5,19 @@ module NFA where
 
 import qualified Data.Foldable as F (Foldable (foldMap'), fold, foldMap, foldl')
 import Data.Map (Map)
-import qualified Data.Map as Map (delete, empty, foldMapWithKey, foldlWithKey', insert, insertWith, keysSet, lookup, map, singleton, toList, unionWith)
+import qualified Data.Map as Map (adjust, delete, empty, foldMapWithKey, foldlWithKey', insert, insertWith, keysSet, lookup, map, singleton, toList, unionWith)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
-import qualified Data.Set as Set (difference, disjoint, empty, fromList, insert, map, member, singleton, toList, unions)
+import qualified Data.Set as Set (difference, disjoint, empty, filter, fromList, insert, intersection, map, member, singleton, toList, unions)
 import Test.QuickCheck (Arbitrary, Gen, arbitrary, choose, elements, generate, sized, suchThat, vectorOf)
 
 -- * The NFA type
+
+-- | Type to represent the successors of a state for the alphabet symbols, in a Nondeterministic Finite Automaton (NFA)
+type Successors state symbol = Map symbol (Set state)
+
+-- | Type to represent the transitions of a Nondeterministic Finite Automaton (NFA)
+type Transitions state symbol = Map state (Successors state symbol)
 
 -- | Type to represent a Nondeterministic Finite Automaton (NFA)
 data NFA symbol state = NFA
@@ -20,28 +26,46 @@ data NFA symbol state = NFA
     -- | The set of final states
     final :: Set state,
     -- | The transition map, associating a state with a map that associates a symbol with a set of states
-    delta :: Map state (Map symbol (Set state))
+    delta :: Transitions state symbol
   }
   deriving (Show)
 
 -- * Modification functions
 
+-- | Returns the successors of a given state considering a transition map
+getSuccsInTransitionMap :: (Ord state) => Transitions state symbol -> state -> Maybe (Successors state symbol)
+getSuccsInTransitionMap = flip Map.lookup
+
+-- | Transforms the successors of a state in a transition map, applying a function to the states
+-- unmodifying the symbols
+transformsSuccs :: (Ord state') => (state -> state') -> Successors state symbol -> Successors state' symbol
+transformsSuccs = Map.map . Set.map
+
+-- | Filters the successors of a state in a transition map, keeping only the states that satisfy a predicate
+--  and then apply a transformation function
+filterTransformsSuccs :: (Ord state') => (state -> state') -> (state -> Bool) -> Successors state symbol -> Successors state' symbol
+filterTransformsSuccs f p = Map.map (Set.map f . Set.filter p)
+
+-- | Replace a state by a set of states in the successors of a state in a transition map
+foldMapSuccs :: (Ord state') => (state -> Set state') -> Successors state symbol -> Successors state' symbol
+foldMapSuccs f = Map.map $ F.foldMap f
+
 -- | Adds a transition (p, a, q) in a transition Map
 addTransitionInMap ::
   (Ord symbol, Ord state) =>
   -- | The transition Map
-  Map state (Map symbol (Set state)) ->
+  Transitions state symbol ->
   -- | The transition
   (state, symbol, state) ->
   -- | The resulting transition Map
-  Map state (Map symbol (Set state))
+  Transitions state symbol
 addTransitionInMap trans (p, a, q) = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a (Set.singleton q)) trans
 
 -- | Adds to the successors of a state p, by a symbol a, the states in qs
 addSuccsInMap ::
   (Ord symbol, Ord state) =>
   -- | The transition Map
-  Map state (Map symbol (Set state)) ->
+  Transitions state symbol ->
   -- | The state p
   state ->
   -- | The symbol a
@@ -49,14 +73,18 @@ addSuccsInMap ::
   -- | The set of states qs
   Set state ->
   -- | The resulting transition Map
-  Map state (Map symbol (Set state))
+  Transitions state symbol
 addSuccsInMap trans p a qs = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a qs) trans
 
--- | Remove a set of states and their related transitions
+-- | Removes a set of states and their related transitions
 removeStates :: (Ord state) => NFA symbol state -> Set state -> NFA symbol state
 removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (final nfa) qs) trans'
   where
     trans' = Map.map (Map.map (`Set.difference` qs)) $ F.foldl' (flip Map.delete) (delta nfa) qs
+
+-- | Restricts the successor of a state to the ones contained in a set of state
+restrictSuccs :: (Ord state) => state -> Set state -> Transitions state symbol -> Transitions state symbol
+restrictSuccs p qs = Map.adjust (Map.map (Set.intersection qs)) p
 
 -- * The Arbitrary Instance
 
@@ -161,6 +189,10 @@ getSuccs ::
   -- | The direct successors of p
   Set state
 getSuccs nfa p = maybe Set.empty F.fold (Map.lookup p (delta nfa))
+
+-- | Returns the direct predecessors of a state
+getPreds :: (Ord a) => NFA symbol a -> a -> Set a
+getPreds nfa p = Set.filter (Set.member p . getSuccs nfa) $ getStates nfa
 
 -- | Returns the direct predecessors of a state, in a couple with the symbol that leads to the state,
 -- if the NFA is homogeneous
