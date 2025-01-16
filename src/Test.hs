@@ -25,7 +25,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (MonoEither (MonoEither), externalIsolation, freeToA, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates)
+import NFAOrbit (MonoEither (MonoEither), externalIsolation, freeToA, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -323,6 +323,45 @@ runTotalIsolation = do
   putStr "aut' isolated: "
   hFlush stdout
   print $ isIsolatedNFA aut'
+
+  -- putStrLn "Printing aut"
+  -- hFlush stdout
+  -- _ <- toPngInImgDir "test_nfa_iso" aut
+
+  -- putStrLn "Printing aut'"
+  -- hFlush stdout
+  -- _ <- toPngInImgDir "test_nfa_iso'" aut'
+
+  putStrLn "Done"
+
+runStabilization :: IO ()
+runStabilization = do
+  aut <- trim . makeStandard . makeHomogeneous <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  let orbits_gates = Set.map (\o -> (ingates aut o, o, outgates aut o)) $ kosarajuSet aut
+  putStr "Orbits and gates (aut): "
+  putStrLn $ toString orbits_gates
+  hFlush stdout
+  let aut' = trim $ stabilizationNFA aut
+  putStr "Nb states of aut: "
+  print $ F.length $ getStates aut
+  putStr "Nb states of aut': "
+  print $ F.length $ getStates aut'
+  hFlush stdout
+
+  let orbits_gates' = Set.map (\o -> (Set.map freeToA $ ingates aut' o, Set.map freeToA o, Set.map freeToA $ outgates aut' o)) $ kosarajuSet aut'
+  putStr "Orbits and gates (aut'): "
+  putStrLn $ toString orbits_gates'
+
+  putStr "aut and aut' equivalent: "
+  hFlush stdout
+  print $ Set.null $ getUsefulStates $ symDiff aut aut'
+  putStr "aut' isolated [ok si False ou True]: "
+  hFlush stdout
+  print $ isIsolatedNFA aut'
+
+  putStr "aut' strongly stable: "
+  hFlush stdout
+  print $ isStronglyStableNFA aut'
 
   -- putStrLn "Printing aut"
   -- hFlush stdout
