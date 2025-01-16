@@ -301,7 +301,7 @@ runTotalExternalIsolation = do
 
 runTotalIsolation :: IO ()
 runTotalIsolation = do
-  aut <- trim <$> generateNFA ['a' .. 'e'] [1 .. 20 :: Int] 3 7 75
+  aut <- trim <$> generateNFA ['a' .. 'e'] [1 .. 30 :: Int] 3 7 45
   let orbits_gates = Set.map (\o -> (ingates aut o, o, outgates aut o)) $ kosarajuSet aut
   putStr "Orbits and gates (aut): "
   putStrLn $ toString orbits_gates
