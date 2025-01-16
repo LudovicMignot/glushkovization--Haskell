@@ -6,7 +6,7 @@ import qualified Data.Foldable as F (foldMap)
 import Data.List (groupBy, nub, sort)
 import qualified Data.Map as Map (foldMapWithKey, mapWithKey, singleton)
 import qualified Data.Set as Set (insert, map)
-import NFA (NFA (NFA, delta), final, generateNFASuchThat, getAlphabet, initial, transitionList)
+import NFA (NFA (NFA, delta), final, generateNFASuchThat, getAlphabet, initial, reverseTransitionMap, transitionList)
 
 -- * Homogeneous NFA
 
@@ -27,7 +27,7 @@ makeHomogeneous ::
   -- | The resulting homogeneous NFA
   NFA symbol (state, Maybe symbol)
 makeHomogeneous nfa =
-  NFA inits finals new_trans
+  NFA inits finals new_trans (reverseTransitionMap new_trans)
   where
     sigma = getAlphabet nfa
     sigma_m = Set.insert Nothing $ Set.map Just sigma

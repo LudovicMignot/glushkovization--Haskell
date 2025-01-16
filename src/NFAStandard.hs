@@ -1,10 +1,10 @@
 module NFAStandard where
 
 import qualified Data.Foldable as F (all)
-import qualified Data.Map as Map (empty, insert, lookup, unionWith)
+import qualified Data.Map as Map (empty, insert, lookup, singleton, unionWith)
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set (disjoint, foldl', insert, singleton, size, union)
-import NFA (NFA (NFA, initial), delta, final, generateNFASuchThat, mapState)
+import NFA (NFA (NFA, delta_rev, initial), delta, final, generateNFASuchThat, mapState, reverseTransitionMap)
 
 -- * Standard NFA
 
@@ -28,7 +28,8 @@ makeStandard nfa =
   NFA
     { initial = Set.singleton Nothing,
       final = final',
-      delta = Map.insert Nothing succ_inits delta_just
+      delta = Map.insert Nothing succ_inits delta_just,
+      delta_rev = Map.unionWith (Map.unionWith Set.union) inv_succ_init_map (delta_rev nfa_just)
     }
   where
     -- equivalent to nfa, where the states p are "promoted" as Just p
@@ -43,6 +44,8 @@ makeStandard nfa =
     final'
       | Set.disjoint (initial nfa) (final nfa) = just_final
       | otherwise = Set.insert Nothing just_final
+
+    inv_succ_init_map = reverseTransitionMap $ Map.singleton Nothing succ_inits
 
 -- | Generates an homogeneous NFA using the corresponding makeGenNFA generator
 generateStandardNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)

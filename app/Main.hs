@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import Test (runIsolationTest)
 
 main :: IO ()
-main = someFunc
+main = runIsolationTest

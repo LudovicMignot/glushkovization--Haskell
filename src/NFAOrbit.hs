@@ -15,14 +15,13 @@ import Control.Monad.State.Lazy
     modify,
   )
 import Data.Bifunctor (first, second)
-import Data.Coerce (coerce)
 import qualified Data.Foldable as F
 import Data.Function ((&))
-import Data.Functor.Classes (Eq1 (..), Ord1 (liftCompare))
+import Data.Functor.Classes (Eq1 (..), Ord1 (liftCompare), Show1 (liftShowsPrec))
 import qualified Data.Map.Lazy as Map
 import Data.Set (Set)
-import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, foldl', fromList, insert, intersection, lookupMax, map, member, singleton, toList, union)
-import NFA (NFA (NFA, final), addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, transformsSuccs)
+import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, findMax, foldl', fromList, insert, intersection, lookupMax, map, member, null, singleton, toList, union)
+import NFA (NFA (NFA, final), addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, reverseTransitionMap, transformsSuccs)
 
 -- * Computation of the orbits
 
@@ -41,7 +40,7 @@ kosaraju1 nfa = snd $ execState (mapM_ aux $ Set.toList $ getStates nfa) (Set.em
     prepend = modify . second . (:)
 
 -- | Computes the second step of the Kosaraju's Algorithm (search in the reversal following the list obtained from step 1)
-kosaraju2 :: (Ord state, Ord symbol) => NFA symbol state -> [state] -> [[state]]
+kosaraju2 :: (Ord state) => NFA symbol state -> [state] -> [[state]]
 kosaraju2 nfa kos1List = filter (not . null) $ evalState (traverse aux kos1List) Set.empty
   where
     aux p = do
@@ -57,7 +56,7 @@ kosaraju2 nfa kos1List = filter (not . null) $ evalState (traverse aux kos1List)
 
 -- | Computes the orbits of an NFA following the Kosaraju's Algorithm
 kosaraju ::
-  (Ord state, Ord symbol) =>
+  (Ord state) =>
   -- | The NFA A
   NFA symbol state ->
   -- | The orbits of A
@@ -66,7 +65,7 @@ kosaraju nfa = kosaraju2 nfa $ kosaraju1 nfa
 
 -- | Computes the orbits of an NFA following the Kosaraju's Algorithm, as a set of set of states
 kosarajuSet ::
-  (Ord state, Ord symbol) =>
+  (Ord state) =>
   -- | The NFA A
   NFA symbol state ->
   -- | The orbits of A
@@ -98,7 +97,7 @@ ingates nfa orbit = Set.filter (\p -> isInitial nfa p || F.any (not . (`Set.memb
 -- If O is an orbit and g a state of O, performs the external isolation of O.
 -- The new added state "Right" ones, the "old" ones "Left" ones.
 externalIsolation ::
-  (Ord state) =>
+  (Ord state, Ord symbol) =>
   -- | The NFA A
   NFA symbol state ->
   -- | A (possibly) orbit O of A
@@ -107,7 +106,7 @@ externalIsolation ::
   state ->
   -- | The (possible) external isolation of g
   NFA symbol (Either state state)
-externalIsolation nfa orbit g = NFA initial' final' delta'
+externalIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap delta')
   where
     toRight = either Right Right
     orbit_l = Set.map Left orbit
@@ -154,7 +153,7 @@ externalIsolation nfa orbit g = NFA initial' final' delta'
 -- If O is an orbit and g a state of O, performs the internal isolation of O.
 -- The new added state "Right" ones, the "old" ones "Left" ones.
 internalIsolation ::
-  (Ord state) =>
+  (Ord state, Ord symbol) =>
   -- | The NFA A
   NFA symbol state ->
   -- | A (possibly) orbit O of A
@@ -163,7 +162,7 @@ internalIsolation ::
   state ->
   -- | The (possible) internal isolation of g
   NFA symbol (Either state state)
-internalIsolation nfa orbit g = NFA initial' final' delta'
+internalIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap delta')
   where
     nfa' = mapState Left nfa
     toRight = either Right Right
@@ -209,17 +208,26 @@ internalIsolation nfa orbit g = NFA initial' final' delta'
 isExtIsolated :: (Ord state) => NFA symbol state -> Set state -> Bool
 isExtIsolated nfa orbit = F.length (outgates nfa orbit) <= 1
 
+-- | Tests whether an NFA is externally isolated
+isNFAExtIsolated :: (Ord state) => NFA symbol state -> Bool
+isNFAExtIsolated nfa = F.all (isExtIsolated nfa) $ kosarajuSet nfa
+
 -- | Tests whether an orbit is internally isolated
 isIntIsolated :: (Ord state) => NFA symbol state -> Set state -> Bool
 isIntIsolated nfa orbit = F.length (ingates nfa orbit) <= 1
 
 -- | Determines whether the orbits of an NFA are isolated
-isIsolatedNFA :: (Ord symbol, Ord state) => NFA symbol state -> Bool
+isIsolatedNFA :: (Ord state) => NFA symbol state -> Bool
 isIsolatedNFA nfa = F.all (\o -> isExtIsolated nfa o && isIntIsolated nfa o) $ kosarajuSet nfa
 
 newtype MonoEither a = MonoEither (Either a a)
   deriving (Eq, Ord)
   deriving newtype (Show)
+
+instance Show1 MonoEither where
+  liftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> MonoEither a -> ShowS
+  liftShowsPrec f _ p (MonoEither (Left a)) = showParen (p > 10) $ showString "Left " . f 11 a
+  liftShowsPrec f _ p (MonoEither (Right a)) = showParen (p > 10) $ showString "Right " . f 11 a
 
 instance Eq1 MonoEither where
   liftEq :: (a -> b -> Bool) -> MonoEither a -> MonoEither b -> Bool
@@ -244,6 +252,11 @@ type FreeEither a = Free MonoEither a
 
 eitherToFree :: Either a a -> FreeEither a
 eitherToFree e = Free $ Pure <$> MonoEither e
+
+freeToA :: FreeEither a -> a
+freeToA (Pure a) = a
+freeToA (Free (MonoEither (Left a))) = freeToA a
+freeToA (Free (MonoEither (Right a))) = freeToA a
 
 -- | Performs the orbital isolation of an NFA A.
 orbitalIsolationNaiveStep ::
@@ -297,6 +310,92 @@ orbitalIsolationNaive nfa =
         Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
       Nothing -> mapState Pure nfa
 
+-- | Externally isolates the orbit o of an NFA
+orbitExternalIsolation ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA A
+  NFA symbol (FreeEither state) ->
+  -- | The orbit o
+  Set (FreeEither state) ->
+  -- | The resulting automaton
+  NFA symbol (FreeEither state)
+orbitExternalIsolation nfa o = aux nfa o $ Set.toList $ outgates nfa o
+  where
+    aux aut _ [] = aut
+    aux aut orb (g : gs) = aux (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) $ fmap (Free . MonoEither . Left) gs
+
+-- | Externally isolates the orbits of an NFA
+nfaExternalIsolation ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | The resulting automaton
+  NFA symbol (FreeEither state)
+nfaExternalIsolation nfa = aux nfa' orbits
+  where
+    nfa' = mapState Pure nfa
+    orbits = Set.fromList <$> kosaraju nfa'
+    aux aut [] = aut
+    aux aut (o : os)
+      | isExtIsolated aut o = aux aut os
+      | otherwise = aux' aut o (Set.toList $ outgates aut o) os
+    aux' aut _ [] os = aux aut os
+    aux' aut _ [_] os = aux aut os
+    aux' aut orb (g : gs) os = aux' (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) (Free . MonoEither . Left <$> gs) (Set.map (Free . MonoEither . Left) <$> os)
+
+-- | Internally isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
+-- Removes orbits with no outgates.
+-- New orbits can be created, and will not be necessarily internally isolated
+nfaInternalIsolationViaSuccOutgates ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | The resulting automaton
+  NFA symbol (FreeEither state)
+nfaInternalIsolationViaSuccOutgates nfa = aux nfa' orbits
+  where
+    nfa' = mapState Pure nfa
+    orbits = Set.fromList <$> kosaraju nfa'
+    aux aut [] = aut
+    aux aut (o : os)
+      | isIntIsolated aut o && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins) = aux aut os
+      | Set.null outs = aux (removeStates aut o) os
+      | otherwise = aux (mapState (Free . MonoEither) $ internalIsolation aut o succ_out) (Set.map (Free . MonoEither . Left) <$> os)
+      where
+        outs = outgates aut o
+        ins = ingates aut o
+        succ_out = Set.findMax $ getSuccs aut $ Set.findMax outs
+
+-- | Isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
+-- Removes orbits with no outgates or no ingates.
+-- May create new orbits, that will be isolate too
+orbitalIsolationViaSuccOutgates ::
+  (Ord state, Ord symbol) =>
+  -- | The NFA A
+  NFA symbol state ->
+  -- | The resulting automaton
+  NFA symbol (FreeEither state)
+orbitalIsolationViaSuccOutgates nfa = aux nfa' orbits
+  where
+    nfa' = mapState Pure nfa
+    orbits = Set.fromList <$> kosaraju nfa'
+    aux aut [] = aut
+    aux aut orbs@(o : os)
+      | Set.null outs || Set.null ins = aux (removeStates aut o) os
+      | F.length o == 1 = aux aut os
+      | isExtIso && (isIntIso && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins)) = aux aut os
+      | not isExtIso = aux (mapState (Free . MonoEither) $ externalIsolation aut o g) (Set.map (Free . MonoEither . Right) o : (Set.map (Free . MonoEither . Left) <$> orbs))
+      | otherwise = aux aut' (new_orbs <> (Set.map (Free . MonoEither . Left) <$> os))
+      where
+        outs = outgates aut o
+        ins = ingates aut o
+        isExtIso = isExtIsolated aut o
+        isIntIso = isIntIsolated aut o
+        g = Set.findMax outs
+        succ_out = Set.findMax $ getSuccs aut g
+        aut' = mapState (Free . MonoEither) $ internalIsolation aut o succ_out
+        new_orbs = fmap Set.fromList $ kosaraju $ removeStates aut' $ getStates aut' `Set.difference` Set.map (Free . MonoEither . Right) (Set.delete succ_out o)
+
 -- * Orbital substitution functions
 
 -- | Substitutes an orbit O of a standard NFA A by a standard orbital automaton A'
@@ -310,7 +409,7 @@ orbitalSubstitution ::
   NFA symbol state' ->
   -- | The resulting automaton
   NFA symbol (Either state state')
-orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'') o_l
+orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'' (reverseTransitionMap delta'')) o_l
   where
     nfa_l = mapState Left nfa
     first_nfa' = F.foldMap (getSuccs nfa') $ initial nfa'

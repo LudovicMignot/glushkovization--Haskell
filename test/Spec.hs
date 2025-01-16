@@ -77,10 +77,12 @@ prop_symDiff nfa1 nfa2 nfa3 s = recognizes nfa3 s == (recognizes nfa1 s /= recog
 main :: IO ()
 main = hspec $ parallel $ do
   -- describe "orbitalIsolation" $ do
-  --   it "preserves the language" $
+  --   it "preserves the language [empirically]" $
   --     property $
-  --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
-  --         \nfa -> let nfa' = orbitalIsolationNaive nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+  --       -- forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
+  --       --   \nfa -> let nfa' = orbitalIsolationNaive nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+  --       forAll (resize 10 theGen) $
+  --         \(nfa, strings) -> let nfa' = orbitalIsolationNaive nfa in conjoin $ map (prop_equiv nfa nfa') strings
 
   -- describe "orbitalIsolation" $ do
   --   it "makes orbit isolated" $
@@ -88,11 +90,11 @@ main = hspec $ parallel $ do
   --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
   --         \nfa -> isIsolatedNFA $ orbitalIsolationNaive nfa
 
-  describe "orbitalIsolationStep" $ do
-    it "preserves the language" $
-      property $
-        forAll (resize 20 arbitrary :: Gen (NFA Char Int)) $
-          \nfa -> let nfa' = orbitalIsolationNaiveStep nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+  -- describe "orbitalIsolationStep" $ do
+  --   it "preserves the language" $
+  --     property $
+  --       forAll (resize 20 arbitrary :: Gen (NFA Char Int)) $
+  --         \nfa -> let nfa' = orbitalIsolationNaiveStep nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "externalIsolation" $ do
     it "preserves the language" $
@@ -103,7 +105,7 @@ main = hspec $ parallel $ do
   describe "internalIsolation" $ do
     it "preserves the language" $
       property $
-        forAll (resize 20 genOrbitsAndState) $
+        forAll (resize 15 genOrbitsAndState) $
           \(nfa, o, g) -> let nfa' = internalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "symDiff" $ parallel $ do

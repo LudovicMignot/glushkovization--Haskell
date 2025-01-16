@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Tuple.Extra (first3, second3, third3)
-import NFA (NFA (NFA, final), getAlphabet, initial, sendsStateSet)
+import NFA (NFA (NFA, final), getAlphabet, initial, reverseTransitionMap, sendsStateSet)
 
 -- | Returns an NFA recognizing the symmetric difference of two NFAs, computing the product of the determinised automata
 symDiff ::
@@ -20,7 +20,7 @@ symDiff ::
   NFA symbol state2 ->
   -- | The resulting NFA (A1 Δ A2)
   NFA symbol (Set state1, Set state2)
-symDiff nfa1 nfa2 = NFA is f' delta'
+symDiff nfa1 nfa2 = NFA is f' delta' (reverseTransitionMap delta')
   where
     f1 = final nfa1
     f2 = final nfa2

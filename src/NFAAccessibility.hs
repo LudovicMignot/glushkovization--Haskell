@@ -51,7 +51,7 @@ getAccessibleStates' nfa = evalState (aux $ Set.difference succs_of_is is) is
 
 -- | Returns the set of the coaccessible states
 getCoaccessibleStates ::
-  (Ord state, Ord symbol) =>
+  (Ord state) =>
   -- | The NFA
   NFA symbol state ->
   -- | The coaccessible states
@@ -60,7 +60,7 @@ getCoaccessibleStates = getAccessibleStates' . NFA.reverse
 
 -- | Returns the set of the useful states
 getUsefulStates ::
-  (Ord state, Ord symbol) =>
+  (Ord state) =>
   -- | The NFA
   NFA symbol state ->
   -- | The useful states
@@ -71,7 +71,7 @@ getUsefulStates nfa = getAccessibleStates' nfa `Set.intersection` getCoaccessibl
 
 -- | Tests whether an NFA is trim
 isTrim ::
-  (Ord state, Ord symbol) =>
+  (Ord state) =>
   -- | The NFA A
   NFA symbol state ->
   -- | The Boolean "A is trim"
@@ -80,8 +80,7 @@ isTrim nfa = getStates nfa == getUsefulStates nfa
 
 -- | Only keeps the useful states of an NFA
 trim ::
-  (Ord symbol, Ord state) =>
-  -- | The NFA
+  (Ord state) =>
   NFA symbol state ->
   -- | The resulting trim NFA
   NFA symbol state

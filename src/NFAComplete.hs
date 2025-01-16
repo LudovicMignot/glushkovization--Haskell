@@ -7,6 +7,7 @@ import NFA
   ( NFA (NFA, final, initial),
     getAlphabet,
     getStates,
+    reverseTransitionMap,
     sendsState,
   )
 
@@ -17,7 +18,7 @@ complete ::
   NFA symbol state ->
   -- | The complete NFA associated with A
   NFA symbol (Maybe state)
-complete nfa = NFA (Set.map Just $ initial nfa) (Set.map Just $ final nfa) delta'
+complete nfa = NFA (Set.map Just $ initial nfa) (Set.map Just $ final nfa) delta' (reverseTransitionMap delta')
   where
     alpha = getAlphabet nfa
     nothing_if_empty e = if Set.null e then Set.singleton Nothing else Set.map Just e

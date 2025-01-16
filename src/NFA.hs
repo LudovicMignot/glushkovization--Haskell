@@ -26,7 +26,9 @@ data NFA symbol state = NFA
     -- | The set of final states
     final :: Set state,
     -- | The transition map, associating a state with a map that associates a symbol with a set of states
-    delta :: Transitions state symbol
+    delta :: Transitions state symbol,
+    -- | The reverse transition map
+    delta_rev :: Transitions state symbol
   }
   deriving (Show)
 
@@ -76,11 +78,16 @@ addSuccsInMap ::
   Transitions state symbol
 addSuccsInMap trans p a qs = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a qs) trans
 
+-- | Removes states from the successors of all the states in a transition map
+removeInMap :: (Ord state) => Transitions state symbol -> Set state -> Transitions state symbol
+removeInMap trans qs = Map.map (Map.map (`Set.difference` qs)) $ F.foldl' (flip Map.delete) trans qs
+
 -- | Removes a set of states and their related transitions
 removeStates :: (Ord state) => NFA symbol state -> Set state -> NFA symbol state
-removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (final nfa) qs) trans'
+removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (final nfa) qs) trans' trans_rev'
   where
-    trans' = Map.map (Map.map (`Set.difference` qs)) $ F.foldl' (flip Map.delete) (delta nfa) qs
+    trans' = removeInMap (delta nfa) qs
+    trans_rev' = removeInMap (delta_rev nfa) qs
 
 -- | Restricts the successor of a state to the ones contained in a set of state
 restrictSuccs :: (Ord state) => state -> Set state -> Transitions state symbol -> Transitions state symbol
@@ -98,7 +105,8 @@ instance Arbitrary (NFA Char Int) where
     is <- vectorOf nb_i $ elements qs
     fs <- vectorOf nb_f $ elements qs
     ts <- vectorOf nb_t $ elements [(p, a, q) | p <- qs, a <- alphabet, q <- qs]
-    return $ NFA (Set.fromList is) (Set.fromList fs) $ F.foldl' addTransitionInMap Map.empty ts
+    let rev_ts = [(q, a, p) | (p, a, q) <- ts]
+    return $ NFA (Set.fromList is) (Set.fromList fs) (F.foldl' addTransitionInMap Map.empty ts) (F.foldl' addTransitionInMap Map.empty rev_ts)
 
 -- | Creates a generator for a NFA, from a superset of symbols and a superset of states, with bounds for the number of initial states, of final states and of transitions
 makeGenNFA ::
@@ -119,7 +127,8 @@ makeGenNFA symbols qs inits finals transitions = do
   is <- fmap Set.fromList $ vectorOf inits $ elements qs
   fs <- fmap Set.fromList $ vectorOf finals $ elements qs
   ts <- vectorOf transitions $ elements [(p, a, q) | p <- qs, a <- symbols, q <- qs]
-  return $ NFA is fs $ F.foldl' addTransitionInMap Map.empty ts
+  let ts_rev = [(q, a, p) | (p, a, q) <- ts]
+  return $ NFA is fs (F.foldl' addTransitionInMap Map.empty ts) (F.foldl' addTransitionInMap Map.empty ts_rev)
 
 -- | Creates a generator for a NFA from makeGenNFa, such that the generated NFAs satisfy the predicate p
 makeGenNFASuchThat :: (Ord state, Ord symbol) => (NFA symbol state -> Bool) -> [symbol] -> [state] -> Int -> Int -> Int -> Gen (NFA symbol state)
@@ -148,7 +157,8 @@ mapState f nfa =
   NFA
     { initial = Set.map f (initial nfa),
       final = Set.map f (final nfa),
-      delta = Map.foldlWithKey' (\res p a_to_states -> Map.insert (f p) (Set.map f <$> a_to_states) res) Map.empty (delta nfa)
+      delta = Map.foldlWithKey' (\res p a_to_states -> Map.insert (f p) (Set.map f <$> a_to_states) res) Map.empty (delta nfa),
+      delta_rev = Map.foldlWithKey' (\res p a_to_states -> Map.insert (f p) (Set.map f <$> a_to_states) res) Map.empty (delta_rev nfa)
     }
 
 -- * Requests
@@ -192,9 +202,9 @@ getSuccs nfa p = maybe Set.empty F.fold (Map.lookup p (delta nfa))
 
 -- | Returns the direct predecessors of a state
 getPreds :: (Ord a) => NFA symbol a -> a -> Set a
-getPreds nfa p = Set.filter (Set.member p . getSuccs nfa) $ getStates nfa
+getPreds nfa p = maybe Set.empty F.fold (Map.lookup p (delta_rev nfa))
 
--- | Returns the direct predecessors of a state, in a couple with the symbol that leads to the state,
+-- | Returns the direct successors of a state, in a couple with the symbol that leads to the state,
 -- if the NFA is homogeneous
 getSuccsWithSymbol ::
   (Ord state, Ord symbol) =>
@@ -285,13 +295,16 @@ recognizes nfa w = not $ Set.disjoint (sends nfa w $ initial nfa) (final nfa)
 
 -- * Reversal
 
+-- | Computes the reverse of a transition map
+reverseTransitionMap :: (Ord symbol, Ord state) => Transitions state symbol -> Transitions state symbol
+reverseTransitionMap trans = F.foldl' addTransitionInMap Map.empty ((\(p, a, q) -> (q, a, p)) <$> transitions)
+  where
+    transitions = Map.toList trans >>= \(p, a_to_states) -> Map.toList a_to_states >>= (\(a, qs) -> (p,a,) <$> Set.toList qs)
+
 -- | Computes the reversal of an NFA
 reverse ::
-  (Ord symbol, Ord state) =>
   -- | The NFA A
   NFA symbol state ->
   -- | The reversal of A
   NFA symbol state
-reverse nfa = NFA (final nfa) (initial nfa) trans'
-  where
-    trans' = F.foldl' addTransitionInMap Map.empty ((\(p, a, q) -> (q, a, p)) <$> transitionList nfa)
+reverse nfa = NFA (final nfa) (initial nfa) (delta_rev nfa) (delta nfa)
