@@ -469,7 +469,7 @@ addTransitions aut a from to = NFA (initial aut) (final aut) delta' (reverseTran
     delta' = Set.foldl' (\trans s -> addSuccsInMap trans s a to) (delta aut) from
 
 -- | Stabilizes an homogeneous and standard NFA
-stabilizationNFA :: (Ord state, Ord symbol) => NFA symbol state -> NFA symbol (FreeEither state)
+stabilizationNFA :: (Ord state, Ord symbol, Show state, Show symbol) => NFA symbol state -> NFA symbol (FreeEither state)
 stabilizationNFA nfa = aux nfa' orbits
   where
     nfa' = orbitalIsolationViaSuccOutgates nfa
@@ -477,25 +477,45 @@ stabilizationNFA nfa = aux nfa' orbits
     aux aut [] = aut
     aux aut (o : os)
       | F.length o == 1 = aux aut os
-      | Set.null (ingates aut o) || Set.null (outgates aut o) = aux (removeStates aut o) os
+      | Set.null (ingates aut o) || Set.null (outgates aut o) = aux aut os
     aux aut (o : os) = aux aut' $ Set.map (Free . MonoEither . Left) <$> os
       where
         aut_o = orbitalNFA aut o
         (first_symb, _) = head $ Map.toList (fromJust $ Map.lookup (fromJust $ Set.lookupMax $ initial aut_o) $ delta aut_o)
-        aut_o' = removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
+        aut_o' =
+          -- ici ajout trace
+          if F.length (kosaraju aut_o) /= 2
+            then error $ "Not 2 orbits: " -- ++ show aut_o
+            else
+              removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
         aut_o_stab = stabilizationNFA aut_o'
         aut_o_stab_res = addTransitions aut_o_stab first_symb (final aut_o_stab) (F.foldMap (getSuccs aut_o_stab) $ initial aut_o_stab)
         aut' =
-          mapState
-            ( \case
-                Left s -> Free $ MonoEither $ Left s
-                Right s -> s >>= fromJust
-            )
-            $ orbitalSubstitution aut o aut_o_stab_res
+          -- ici ajout trace
+          if F.length (kosaraju aut_o_stab_res) /= 2
+            then error $ "Not 2 orbits: " -- ++ show aut_o
+            else
+              if not (isStronglyStableNFA aut_o_stab_res)
+                then error $ "Not stable: " -- ++ show aut_o ++ show aut_o_stab_res
+                else
+                  if not (isStronglyStableNFA aut_o_stab_res)
+                    then error $ "Not strongly stable: " -- ++ show aut_o ++ show aut_o_stab_res
+                    else
+                      mapState
+                        ( \case
+                            Left s -> Free $ MonoEither $ Left s
+                            Right s -> s >>= fromJust
+                        )
+                        $ orbitalSubstitution aut o aut_o_stab_res
 
 -- | Tests whether an orbit is externally stable
-isExtStable :: (Ord state) => NFA symbol state -> Set state -> Bool
-isExtStable aut o = allEqual preds && allEqual succs
+isExtStable :: (Ord state, Show state, Show symbol) => NFA symbol state -> Set state -> Bool
+isExtStable aut o =
+  -- ici ajout trace
+  if null ins || null outs
+    then error $ "Empty ins or outs: " ++ show aut ++ show ins ++ show outs
+    else
+      allEqual preds && allEqual succs
   where
     ins = Set.toList $ ingates aut o
     outs = Set.toList $ outgates aut o
@@ -511,11 +531,11 @@ isIntStable aut o = F.length o <= 1 || all (\g -> ins `Set.isSubsetOf` getSuccs 
     outs = outgates aut o
 
 -- | Tests whether an orbit is stable
-isStable :: (Ord state) => NFA symbol state -> Set state -> Bool
+isStable :: (Ord state, Show state, Show symbol) => NFA symbol state -> Set state -> Bool
 isStable aut o = isExtStable aut o && isIntStable aut o
 
 -- | Tests whether an orbit is strongly stable
-isStronglyStable :: (Ord state, Ord symbol) => NFA symbol state -> Set state -> Bool
+isStronglyStable :: (Ord state, Ord symbol, Show state, Show symbol) => NFA symbol state -> Set state -> Bool
 isStronglyStable aut o = F.length o <= 1 || isStable aut o && all (isStronglyStable aut_o') orbits
   where
     aut_o = orbitalNFA aut o
@@ -524,5 +544,9 @@ isStronglyStable aut o = F.length o <= 1 || isStable aut o && all (isStronglySta
     orbits = Set.fromList <$> kosaraju aut_o'
 
 -- | Tests whether an NFA is strongly stable
-isStronglyStableNFA :: (Ord state, Ord symbol) => NFA symbol state -> Bool
+isStronglyStableNFA :: (Ord state, Ord symbol, Show state, Show symbol) => NFA symbol state -> Bool
 isStronglyStableNFA aut = all (isStronglyStable aut) $ kosarajuSet aut
+
+-- | Tests whether an NFA is stable
+isStableNFA :: (Ord state, Show state, Show symbol) => NFA symbol state -> Bool
+isStableNFA aut = all (isStable aut) $ kosarajuSet aut

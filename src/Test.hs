@@ -25,7 +25,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (MonoEither (MonoEither), externalIsolation, freeToA, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
+import NFAOrbit (MonoEither (MonoEither), externalIsolation, freeToA, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -336,7 +336,7 @@ runTotalIsolation = do
 
 runStabilization :: IO ()
 runStabilization = do
-  aut <- trim . makeStandard . makeHomogeneous <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
+  aut <- trim . makeStandard . makeHomogeneous <$> generateNFA ['a' .. 'b'] [1 .. 10 :: Int] 2 5 15
   let orbits_gates = Set.map (\o -> (ingates aut o, o, outgates aut o)) $ kosarajuSet aut
   putStr "Orbits and gates (aut): "
   putStrLn $ toString orbits_gates
@@ -358,6 +358,10 @@ runStabilization = do
   putStr "aut' isolated [ok si False ou True]: "
   hFlush stdout
   print $ isIsolatedNFA aut'
+
+  putStr "aut' stable: "
+  hFlush stdout
+  print $ isStableNFA aut'
 
   putStr "aut' strongly stable: "
   hFlush stdout
