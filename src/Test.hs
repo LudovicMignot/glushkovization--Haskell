@@ -5,9 +5,10 @@ module Test where
 import Control.Monad.Free (Free (Pure))
 import qualified Data.Foldable as F
 import qualified Data.Map as Map
+import Data.Set (fromList)
 import qualified Data.Set as Set
 import NFA
-  ( NFA (NFA),
+  ( NFA (NFA, delta, delta_rev, final, initial),
     addTransitionInMap,
     generateNFA,
     generateNFASuchThat,
@@ -16,7 +17,7 @@ import NFA
     reverse,
     reverseTransitionMap,
   )
-import NFAAccessibility (getUsefulStates, trim)
+import NFAAccessibility (getUsefulStates, isTrim, trim)
 import NFABoolComb (symDiff)
 import NFAComplete (complete)
 import NFADotRepr (nfaToDot, toPngInImgDir)
@@ -336,7 +337,7 @@ runTotalIsolation = do
 
 runStabilization :: IO ()
 runStabilization = do
-  aut <- trim . makeStandard . makeHomogeneous <$> generateNFA ['a' .. 'b'] [1 .. 10 :: Int] 2 5 15
+  aut <- trim . makeStandard . makeHomogeneous <$> generateNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15
   let orbits_gates = Set.map (\o -> (ingates aut o, o, outgates aut o)) $ kosarajuSet aut
   putStr "Orbits and gates (aut): "
   putStrLn $ toString orbits_gates
@@ -367,6 +368,10 @@ runStabilization = do
   hFlush stdout
   print $ isStronglyStableNFA aut'
 
+  putStr "aut' trim: "
+  hFlush stdout
+  print $ isTrim aut'
+
   -- putStrLn "Printing aut"
   -- hFlush stdout
   -- _ <- toPngInImgDir "test_nfa_iso" aut
@@ -376,3 +381,19 @@ runStabilization = do
   -- _ <- toPngInImgDir "test_nfa_iso'" aut'
 
   putStrLn "Done"
+
+runCounterExample :: IO ()
+runCounterExample = do
+  let aut = NFA {initial = fromList [1 :: Int, 3, 5], final = fromList [6, 8, 10], delta = Map.fromList [(1, Map.fromList [('b', fromList [3])]), (2, Map.fromList [('a', fromList [1, 7])]), (3, Map.fromList [('a', fromList [2, 5])]), (4, Map.fromList [('b', fromList [2, 10])]), (5, Map.fromList [('b', fromList [1, 3])]), (8, Map.fromList [('b', fromList [1, 4, 8])]), (9, Map.fromList [('b', fromList [1, 4])]), (10, Map.fromList [('a', fromList [10])])], delta_rev = Map.fromList [(1, Map.fromList [('a', fromList [2]), ('b', fromList [5, 8, 9])]), (2, Map.fromList [('a', fromList [3]), ('b', fromList [4])]), (3, Map.fromList [('b', fromList [1, 5])]), (4, Map.fromList [('b', fromList [8, 9])]), (5, Map.fromList [('a', fromList [3])]), (7, Map.fromList [('a', fromList [2])]), (8, Map.fromList [('b', fromList [8])]), (10, Map.fromList [('a', fromList [10]), ('b', fromList [4])])]}
+
+  let aut2 = trim . makeStandard . makeHomogeneous $ aut
+
+  putStrLn "Printing aut"
+  hFlush stdout
+  _ <- toPngInImgDir "contre_ex" aut
+
+  putStrLn "Printing aut2"
+  hFlush stdout
+  _ <- toPngInImgDir "contre_ex2" aut2
+
+  print "done"

@@ -1,7 +1,7 @@
 import qualified Data.Foldable as F
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
-import NFA (NFA, recognizes, reverse)
+import NFA (NFA, getStates, makeGenNFA, recognizes, reverse)
 import NFAAccessibility
   ( getAccessibleStates,
     getAccessibleStates',
@@ -11,7 +11,7 @@ import NFAAccessibility
   )
 import NFABoolComb (symDiff)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, outgates)
+import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, outgates, stabilizationNFA)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -76,6 +76,43 @@ prop_symDiff nfa1 nfa2 nfa3 s = recognizes nfa3 s == (recognizes nfa1 s /= recog
 
 main :: IO ()
 main = hspec $ parallel $ do
+  describe "stabilization" $ do
+    it "produces a trim automaton" $
+      property $
+        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+          \nfa ->
+            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+             in Set.null (getStates nfa') || isTrim nfa'
+
+    it "produces an homogeneous automaton" $
+      property $
+        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+          \nfa ->
+            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+             in Set.null (getStates nfa') || isHomogeneous nfa'
+
+    it "produces a standard automaton" $
+      property $
+        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+          \nfa ->
+            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+             in Set.null (getStates nfa') || isStandard nfa'
+
+  describe "stabilization" $ do
+    it "produces a strongly stable automaton" $
+      property $
+        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+          \nfa ->
+            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+             in Set.null (getStates nfa') || isStronglyStableNFA nfa'
+
+    it "preserves the language" $
+      property $
+        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 10) $
+          \nfa ->
+            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+             in Set.null $ getUsefulStates $ symDiff nfa nfa'
+
   -- describe "orbitalIsolation" $ do
   --   it "preserves the language [empirically]" $
   --     property $
