@@ -76,26 +76,32 @@ prop_symDiff nfa1 nfa2 nfa3 s = recognizes nfa3 s == (recognizes nfa1 s /= recog
 
 main :: IO ()
 main = hspec $ parallel $ do
+  describe "internalIsolation" $ do
+    it "preserves the utility" $
+      property $
+        forAll (resize 15 genOrbitsAndState) $
+          \(nfa, o, g) -> let nfa' = internalIsolation (trim nfa) o g in isTrim nfa'
+
   describe "stabilization" $ do
     it "produces a trim automaton" $
       property $
         forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
           \nfa ->
-            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isTrim nfa'
 
     it "produces an homogeneous automaton" $
       property $
         forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
           \nfa ->
-            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isHomogeneous nfa'
 
     it "produces a standard automaton" $
       property $
         forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
           \nfa ->
-            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isStandard nfa'
 
   describe "stabilization" $ do
@@ -103,7 +109,7 @@ main = hspec $ parallel $ do
       property $
         forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
           \nfa ->
-            let nfa' = trim . stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isStronglyStableNFA nfa'
 
     it "preserves the language" $

@@ -167,7 +167,9 @@ internalIsolation ::
   state ->
   -- | The (possible) internal isolation of g
   NFA symbol (Either state state)
-internalIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap delta')
+internalIsolation nfa orbit g =
+  -- ici remplacer trim
+  trim $ NFA initial' final' delta' (reverseTransitionMap delta')
   where
     nfa' = mapState Left nfa
     toRight = either Right Right

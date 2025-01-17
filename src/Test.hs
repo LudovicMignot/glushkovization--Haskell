@@ -342,7 +342,7 @@ runStabilization = do
   putStr "Orbits and gates (aut): "
   putStrLn $ toString orbits_gates
   hFlush stdout
-  let aut' = trim $ stabilizationNFA aut
+  let aut' = stabilizationNFA aut
   putStr "Nb states of aut: "
   print $ F.length $ getStates aut
   putStr "Nb states of aut': "
