@@ -67,6 +67,29 @@ getUsefulStates ::
   Set state
 getUsefulStates nfa = getAccessibleStates' nfa `Set.intersection` getCoaccessibleStates nfa
 
+-- | Returns the set of the accessible states from a set of states restricting the transitions defined by a
+-- set of states
+getAccessibleStatesFromVia ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The set of "initial" states
+  Set state ->
+  -- | The restriction of the considered states
+  Set state ->
+  -- | The accessible states
+  Set state
+getAccessibleStatesFromVia nfa is vs = evalState (aux $ Set.difference succs_of_is is) is
+  where
+    succs_of_is = F.foldMap (getSuccs nfa) is `Set.intersection` vs
+    aux nexts
+      | Set.null nexts = get
+      | otherwise = do
+          modify (Set.union nexts)
+          get >>= aux . Set.difference succs_of_nexts
+      where
+        succs_of_nexts = F.foldMap (getSuccs nfa) nexts `Set.intersection` vs
+
 -- * Trim operation
 
 -- | Tests whether an NFA is trim
