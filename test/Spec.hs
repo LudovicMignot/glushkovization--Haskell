@@ -11,7 +11,7 @@ import NFAAccessibility
   )
 import NFABoolComb (symDiff)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, outgates, stabilizationNFA)
+import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, outgates, stabilizationNFA)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -76,68 +76,81 @@ prop_symDiff nfa1 nfa2 nfa3 s = recognizes nfa3 s == (recognizes nfa1 s /= recog
 
 main :: IO ()
 main = hspec $ parallel $ do
+  describe "orbitalIsolationViaSuccOutgates" $ do
+    it "produces a trim automaton" $
+      property $
+        forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
+          \nfa ->
+            let nfa' = orbitalIsolationViaSuccOutgates . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+             in Set.null (getStates nfa') || isTrim nfa'
+
   describe "internalIsolation" $ do
     it "preserves the utility" $
       property $
-        forAll (resize 15 genOrbitsAndState) $
-          \(nfa, o, g) -> let nfa' = internalIsolation (trim nfa) o g in isTrim nfa'
+        forAll (resize 20 genOrbitsAndState) $
+          \(nfa, o, g) -> let nfa' = fst $ internalIsolation (trim nfa) o g in isTrim nfa'
+
+  describe "externalIsolation" $ do
+    it "preserves the utility" $
+      property $
+        forAll (resize 20 genOrbitsAndState) $
+          \(nfa, o, g) -> let nfa' = fst $ internalIsolation (trim nfa) o g in isTrim nfa'
 
   describe "stabilization" $ do
     it "produces a trim automaton" $
       property $
-        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+        forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
             let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isTrim nfa'
 
     it "produces an homogeneous automaton" $
       property $
-        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+        forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
             let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isHomogeneous nfa'
 
     it "produces a standard automaton" $
       property $
-        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+        forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
             let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isStandard nfa'
 
-  describe "stabilization" $ do
     it "produces a strongly stable automaton" $
       property $
-        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 15) $
+        forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
             let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isStronglyStableNFA nfa'
 
     it "preserves the language" $
       property $
-        forAll (makeGenNFA ['a' .. 'b'] [1 .. 10 :: Int] 3 5 10) $
+        forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
             let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null $ getUsefulStates $ symDiff nfa nfa'
 
-  -- describe "orbitalIsolation" $ do
-  --   it "preserves the language [empirically]" $
-  --     property $
-  --       -- forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
-  --       --   \nfa -> let nfa' = orbitalIsolationNaive nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
-  --       forAll (resize 10 theGen) $
-  --         \(nfa, strings) -> let nfa' = orbitalIsolationNaive nfa in conjoin $ map (prop_equiv nfa nfa') strings
+  -- -- describe "orbitalIsolation" $ do
+  -- --   it "preserves the language [empirically]" $
+  -- --     property $
+  -- --       -- forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
+  -- --       --   \nfa -> let nfa' = orbitalIsolationNaive nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+  -- --       forAll (resize 10 theGen) $
+  -- --         \(nfa, strings) -> let nfa' = orbitalIsolationNaive nfa in conjoin $ map (prop_equiv nfa nfa') strings
 
-  -- describe "orbitalIsolation" $ do
-  --   it "makes orbit isolated" $
-  --     property $
-  --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
-  --         \nfa -> isIsolatedNFA $ orbitalIsolationNaive nfa
+  -- -- describe "orbitalIsolation" $ do
+  -- --   it "makes orbit isolated" $
+  -- --     property $
+  -- --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
+  -- --         \nfa -> isIsolatedNFA $ orbitalIsolationNaive nfa
 
-  -- describe "orbitalIsolationStep" $ do
-  --   it "preserves the language" $
-  --     property $
-  --       forAll (resize 20 arbitrary :: Gen (NFA Char Int)) $
-  --         \nfa -> let nfa' = orbitalIsolationNaiveStep nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+  -- -- describe "orbitalIsolationStep" $ do
+  -- --   it "preserves the language" $
+  -- --     property $
+  -- --       forAll (resize 20 arbitrary :: Gen (NFA Char Int)) $
+  -- --         \nfa -> let nfa' = orbitalIsolationNaiveStep nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "externalIsolation" $ do
     it "preserves the language" $
@@ -149,7 +162,7 @@ main = hspec $ parallel $ do
     it "preserves the language" $
       property $
         forAll (resize 15 genOrbitsAndState) $
-          \(nfa, o, g) -> let nfa' = internalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+          \(nfa, o, g) -> let nfa' = fst $ internalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "symDiff" $ parallel $ do
     it "computes the symmetric difference" $

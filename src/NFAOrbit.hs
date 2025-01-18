@@ -23,10 +23,12 @@ import qualified Data.Map.Lazy as Map
 import Data.Maybe (fromJust)
 import Data.Set (Set)
 import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, findMax, foldl', fromList, insert, intersection, isSubsetOf, lookupMax, map, member, null, singleton, toList, union)
+import MonoEither (FreeEither, MonoEither (MonoEither), eitherToFree)
 import NFA (NFA (NFA, delta_rev, final), addSuccsInMap, addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, reverseTransitionMap, transformsSuccs)
-import NFAAccessibility (isTrim, trim)
+import NFAAccessibility (getAccessibleStatesFromVia, isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
 import NFAStandard (isStandard)
+import ToString (ToString, toString)
 
 -- * Computation of the orbits
 
@@ -157,6 +159,7 @@ externalIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap
 -- The original O has only one incoming link with the outside through g.
 -- If O is an orbit and g a state of O, performs the internal isolation of O.
 -- The new added state "Right" ones, the "old" ones "Left" ones.
+-- Also returns the new added states
 internalIsolation ::
   (Ord state, Ord symbol) =>
   -- | The NFA A
@@ -166,19 +169,21 @@ internalIsolation ::
   -- | A state g
   state ->
   -- | The (possible) internal isolation of g
-  NFA symbol (Either state state)
+  (NFA symbol (Either state state), Set (Either state state))
 internalIsolation nfa orbit g =
   -- ici remplacer trim
-  trim $ NFA initial' final' delta' (reverseTransitionMap delta')
+  -- trim $ NFA initial' final' delta' (reverseTransitionMap delta')
+  (NFA initial' final' delta' (reverseTransitionMap delta'), Set.map Right o_no_g_acc)
   where
     nfa' = mapState Left nfa
     toRight = either Right Right
     o_no_g = Set.delete g orbit
     o_no_g_l = Set.map Left o_no_g
+    o_no_g_acc = getAccessibleStatesFromVia nfa (Set.delete g $ ingates nfa orbit) o_no_g
     others = getStates nfa `Set.difference` orbit
     others_l = Set.map Left others
-    initial' = Set.union (initial nfa' `Set.difference` o_no_g_l) $ Set.map Right $ initial nfa `Set.intersection` o_no_g
-    final' = Set.union (final nfa') $ Set.map Right $ final nfa `Set.intersection` o_no_g
+    initial' = Set.union (initial nfa' `Set.difference` o_no_g_l) $ Set.map Right $ initial nfa `Set.intersection` o_no_g_acc
+    final' = Set.union (final nfa') $ Set.map Right $ final nfa `Set.intersection` o_no_g_acc
     delta' =
       delta nfa'
         -- The "new" o' are not linked anymore to the "old" O except for g,
@@ -197,7 +202,8 @@ internalIsolation nfa orbit g =
                     trans
               )
           )
-          o_no_g
+          -- ici modif o_no_g
+          o_no_g_acc
         -- The "old" other states outside of O are linked to the "new" o' if they were linked to an old "o"
         & flip
           ( Set.foldl'
@@ -227,44 +233,6 @@ isIntIsolated nfa orbit = F.length (ingates nfa orbit) <= 1
 isIsolatedNFA :: (Ord state) => NFA symbol state -> Bool
 isIsolatedNFA nfa = F.all (\o -> isExtIsolated nfa o && isIntIsolated nfa o) $ kosarajuSet nfa
 
-newtype MonoEither a = MonoEither (Either a a)
-  deriving (Eq, Ord)
-  deriving newtype (Show)
-
-instance Show1 MonoEither where
-  liftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> MonoEither a -> ShowS
-  liftShowsPrec f _ p (MonoEither (Left a)) = showParen (p > 10) $ showString "Left " . f 11 a
-  liftShowsPrec f _ p (MonoEither (Right a)) = showParen (p > 10) $ showString "Right " . f 11 a
-
-instance Eq1 MonoEither where
-  liftEq :: (a -> b -> Bool) -> MonoEither a -> MonoEither b -> Bool
-  liftEq f (MonoEither (Left a)) (MonoEither (Left b)) = f a b
-  liftEq _ (MonoEither (Left _)) (MonoEither (Right _)) = False
-  liftEq _ (MonoEither (Right _)) (MonoEither (Left _)) = False
-  liftEq f (MonoEither (Right a)) (MonoEither (Right b)) = f a b
-
-instance Ord1 MonoEither where
-  liftCompare :: (a -> b -> Ordering) -> MonoEither a -> MonoEither b -> Ordering
-  liftCompare f (MonoEither (Left a)) (MonoEither (Left b)) = f a b
-  liftCompare _ (MonoEither (Left _)) (MonoEither (Right _)) = LT
-  liftCompare _ (MonoEither (Right _)) (MonoEither (Left _)) = GT
-  liftCompare f (MonoEither (Right a)) (MonoEither (Right b)) = f a b
-
-instance Functor MonoEither where
-  fmap :: (a -> b) -> MonoEither a -> MonoEither b
-  fmap f (MonoEither (Left a)) = MonoEither $ Left $ f a
-  fmap f (MonoEither (Right a)) = MonoEither $ Right $ f a
-
-type FreeEither a = Free MonoEither a
-
-eitherToFree :: Either a a -> FreeEither a
-eitherToFree e = Free $ Pure <$> MonoEither e
-
-freeToA :: FreeEither a -> a
-freeToA (Pure a) = a
-freeToA (Free (MonoEither (Left a))) = freeToA a
-freeToA (Free (MonoEither (Right a))) = freeToA a
-
 -- | Performs the orbital isolation of an NFA A.
 orbitalIsolationNaiveStep ::
   (Ord state, Ord symbol) =>
@@ -286,7 +254,7 @@ orbitalIsolationNaiveStep nfa =
       (kosarajuSet nfa) of
       Just o -> case Set.lookupMax $ outgates nfa o of
         Just g -> case Set.lookupMax $ getSuccs nfa g of
-          Just g' -> mapState eitherToFree $ internalIsolation nfa o g'
+          Just g' -> mapState eitherToFree $ fst $ internalIsolation nfa o g'
           Nothing -> mapState Pure $ removeStates nfa o
         Nothing -> mapState Pure $ removeStates nfa o
       Nothing -> mapState Pure nfa
@@ -312,7 +280,7 @@ orbitalIsolationNaive nfa =
       (kosarajuSet nfa) of
       Just o -> case Set.lookupMax $ outgates nfa o of
         Just g -> case Set.lookupMax $ getSuccs nfa g of
-          Just g' -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ internalIsolation nfa o g'
+          Just g' -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ fst $ internalIsolation nfa o g'
           Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
         Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
       Nothing -> mapState Pure nfa
@@ -367,7 +335,7 @@ nfaInternalIsolationViaSuccOutgates nfa = aux nfa' orbits
     aux aut (o : os)
       | isIntIsolated aut o && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins) = aux aut os
       | Set.null outs = aux (removeStates aut o) os
-      | otherwise = aux (mapState (Free . MonoEither) $ internalIsolation aut o succ_out) (Set.map (Free . MonoEither . Left) <$> os)
+      | otherwise = aux (mapState (Free . MonoEither) $ fst $ internalIsolation aut o succ_out) (Set.map (Free . MonoEither . Left) <$> os)
       where
         outs = outgates aut o
         ins = ingates aut o
@@ -377,7 +345,7 @@ nfaInternalIsolationViaSuccOutgates nfa = aux nfa' orbits
 -- Removes orbits with no outgates or no ingates.
 -- May create new orbits, that will be isolate too
 orbitalIsolationViaSuccOutgates ::
-  (Ord state, Ord symbol) =>
+  (Ord state, Ord symbol, ToString state) =>
   -- | The NFA A
   NFA symbol state ->
   -- | The resulting automaton
@@ -392,16 +360,17 @@ orbitalIsolationViaSuccOutgates nfa = aux nfa' orbits
       | F.length o == 1 = aux aut os
       | isExtIso && (isIntIso && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins)) = aux aut os
       | not isExtIso = aux (mapState (Free . MonoEither) $ externalIsolation aut o g) (Set.map (Free . MonoEither . Right) o : (Set.map (Free . MonoEither . Left) <$> orbs))
-      | otherwise = aux aut' (new_orbs <> (Set.map (Free . MonoEither . Left) <$> os))
+      | otherwise = aux aut' ((Set.map (Free . MonoEither) <$> new_orbs) <> (Set.map (Free . MonoEither . Left) <$> os))
       where
         outs = outgates aut o
         ins = ingates aut o
         isExtIso = isExtIsolated aut o
         isIntIso = isIntIsolated aut o
         g = Set.findMax outs
-        succ_out = Set.findMax $ getSuccs aut g
-        aut' = mapState (Free . MonoEither) $ internalIsolation aut o succ_out
-        new_orbs = fmap Set.fromList $ kosaraju $ removeStates aut' $ getStates aut' `Set.difference` Set.map (Free . MonoEither . Right) (Set.delete succ_out o)
+        succ_out = Set.findMax $ getSuccs aut g `Set.intersection` o
+        (aut'_, new_states) = internalIsolation aut o succ_out
+        aut' = mapState (Free . MonoEither) aut'_
+        new_orbs = fmap Set.fromList $ kosaraju $ removeStates aut'_ $ getStates aut'_ `Set.difference` new_states -- (Set.delete succ_out o)
 
 -- * Orbital substitution functions
 
@@ -474,7 +443,7 @@ addTransitions aut a from to = NFA (initial aut) (final aut) delta' (reverseTran
     delta' = Set.foldl' (\trans s -> addSuccsInMap trans s a to) (delta aut) from
 
 -- | Stabilizes an homogeneous and standard NFA
-stabilizationNFA :: (Ord state, Ord symbol, Show state, Show symbol) => NFA symbol state -> NFA symbol (FreeEither state)
+stabilizationNFA :: (Ord state, Ord symbol, Show state, Show symbol, ToString state) => NFA symbol state -> NFA symbol (FreeEither state)
 stabilizationNFA nfa = aux nfa' orbits
   where
     nfa' = orbitalIsolationViaSuccOutgates nfa

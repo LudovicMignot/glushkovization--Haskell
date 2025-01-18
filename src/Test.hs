@@ -7,6 +7,7 @@ import qualified Data.Foldable as F
 import qualified Data.Map as Map
 import Data.Set (fromList)
 import qualified Data.Set as Set
+import MonoEither (MonoEither, freeToA)
 import NFA
   ( NFA (NFA, delta, delta_rev, final, initial),
     addTransitionInMap,
@@ -14,6 +15,7 @@ import NFA
     generateNFASuchThat,
     getStates,
     mapState,
+    removeStates,
     reverse,
     reverseTransitionMap,
   )
@@ -26,7 +28,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (MonoEither (MonoEither), externalIsolation, freeToA, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, isStable, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -168,7 +170,7 @@ runInternalIsolation = do
       print o
       g <- generate $ elements $ Set.toList o
       print g
-      let aut' = internalIsolation aut o g
+      let aut' = fst $ internalIsolation aut o g
       _ <- toPngInImgDir "test_intIso2" aut'
       print "Done"
 
@@ -384,16 +386,43 @@ runStabilization = do
 
 runCounterExample :: IO ()
 runCounterExample = do
-  let aut = NFA {initial = fromList [1 :: Int, 3, 5], final = fromList [6, 8, 10], delta = Map.fromList [(1, Map.fromList [('b', fromList [3])]), (2, Map.fromList [('a', fromList [1, 7])]), (3, Map.fromList [('a', fromList [2, 5])]), (4, Map.fromList [('b', fromList [2, 10])]), (5, Map.fromList [('b', fromList [1, 3])]), (8, Map.fromList [('b', fromList [1, 4, 8])]), (9, Map.fromList [('b', fromList [1, 4])]), (10, Map.fromList [('a', fromList [10])])], delta_rev = Map.fromList [(1, Map.fromList [('a', fromList [2]), ('b', fromList [5, 8, 9])]), (2, Map.fromList [('a', fromList [3]), ('b', fromList [4])]), (3, Map.fromList [('b', fromList [1, 5])]), (4, Map.fromList [('b', fromList [8, 9])]), (5, Map.fromList [('a', fromList [3])]), (7, Map.fromList [('a', fromList [2])]), (8, Map.fromList [('b', fromList [8])]), (10, Map.fromList [('a', fromList [10]), ('b', fromList [4])])]}
+  let trans = Map.fromList [(1 :: Int, Map.fromList [('a', fromList [4, 10])]), (4, Map.fromList [('b', fromList [1])]), (6, Map.fromList [('b', fromList [1])])]
 
-  let aut2 = trim . makeStandard . makeHomogeneous $ aut
+  let aut_0 = NFA {initial = fromList [6], final = fromList [1, 6, 10], delta = trans, delta_rev = reverseTransitionMap trans}
 
+  print $ isHomogeneous aut_0
+  print $ isStandard aut_0
+  print $ isTrim aut_0
+
+  print $ isIsolatedNFA aut_0
+
+  let aut = aut_0
   putStrLn "Printing aut"
   hFlush stdout
   _ <- toPngInImgDir "contre_ex" aut
 
-  putStrLn "Printing aut2"
+  let orbits_gates' = Set.map (\o -> (ingates aut o, o, outgates aut o)) $ kosarajuSet aut
+  putStr "Orbits and gates (aut'): "
+  putStrLn $ toString orbits_gates'
+
+  let aut' = orbitalIsolationViaSuccOutgates aut
+
+  let (aut'2, new_states) = internalIsolation aut (Set.fromList [1, 4]) 4
+
+  print $ toString new_states
+
+  putStrLn "Printing aut'2"
   hFlush stdout
-  _ <- toPngInImgDir "contre_ex2" aut2
+  _ <- toPngInImgDir "contre_ex''" aut'2
+
+  putStrLn "Printing aut'"
+  hFlush stdout
+  _ <- toPngInImgDir "contre_ex'" aut'
+
+  print $ F.length $ getStates aut'
+  print $ F.length $ getStates $ trim aut'
+
+  print $ isTrim aut'
+  print $ isStronglyStableNFA $ trim aut'
 
   print "done"

@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module ToString where
 
@@ -8,7 +7,7 @@ import Data.Char (toUpper)
 import Data.List (intercalate)
 import Data.Set (Set)
 import qualified Data.Set as Set
-import NFAOrbit (FreeEither, MonoEither (MonoEither))
+import MonoEither (FreeEither, MonoEither (MonoEither))
 
 -- | String conversion from a type
 class ToString a where
@@ -75,8 +74,8 @@ instance (ToString a) => ToString [a] where
   toHtmlString l = intercalate "," $ map toHtmlString l
 
 instance (ToString a) => ToString (Maybe a) where
-  toString Nothing = "Nothing"
-  toString (Just x) = "Just " ++ toString x
+  toString Nothing = "⊥"
+  toString (Just x) = "J " ++ toString x
 
 instance (ToString a, ToString b) => ToString (Either a b) where
   toString (Left a) = "Left " ++ toString a
