@@ -11,7 +11,7 @@ import NFAAccessibility
   )
 import NFABoolComb (symDiff)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, outgates, stabilizationNFA)
+import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet,   orbitalIsolationViaSuccOutgates, outgates, stabilizationNFA)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -131,26 +131,6 @@ main = hspec $ parallel $ do
           \nfa ->
             let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null $ getUsefulStates $ symDiff nfa nfa'
-
-  -- -- describe "orbitalIsolation" $ do
-  -- --   it "preserves the language [empirically]" $
-  -- --     property $
-  -- --       -- forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
-  -- --       --   \nfa -> let nfa' = orbitalIsolationNaive nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
-  -- --       forAll (resize 10 theGen) $
-  -- --         \(nfa, strings) -> let nfa' = orbitalIsolationNaive nfa in conjoin $ map (prop_equiv nfa nfa') strings
-
-  -- -- describe "orbitalIsolation" $ do
-  -- --   it "makes orbit isolated" $
-  -- --     property $
-  -- --       forAll (resize 5 arbitrary :: Gen (NFA Char Int)) $
-  -- --         \nfa -> isIsolatedNFA $ orbitalIsolationNaive nfa
-
-  -- -- describe "orbitalIsolationStep" $ do
-  -- --   it "preserves the language" $
-  -- --     property $
-  -- --       forAll (resize 20 arbitrary :: Gen (NFA Char Int)) $
-  -- --         \nfa -> let nfa' = orbitalIsolationNaiveStep nfa in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "externalIsolation" $ do
     it "preserves the language" $

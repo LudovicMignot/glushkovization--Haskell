@@ -233,113 +233,113 @@ isIntIsolated nfa orbit = F.length (ingates nfa orbit) <= 1
 isIsolatedNFA :: (Ord state) => NFA symbol state -> Bool
 isIsolatedNFA nfa = F.all (\o -> isExtIsolated nfa o && isIntIsolated nfa o) $ kosarajuSet nfa
 
--- | Performs the orbital isolation of an NFA A.
-orbitalIsolationNaiveStep ::
-  (Ord state, Ord symbol) =>
-  -- | The NFA A
-  NFA symbol state ->
-  -- | The resulting automaton
-  NFA symbol (FreeEither state)
-orbitalIsolationNaiveStep nfa =
-  case F.find
-    ( not . isExtIsolated nfa
-    )
-    (kosarajuSet nfa) of
-    Just o -> case Set.lookupMax $ outgates nfa o of
-      Just g -> mapState eitherToFree $ externalIsolation nfa o g
-      Nothing -> mapState Pure $ removeStates nfa o
-    Nothing -> case F.find
-      ( not . isIntIsolated nfa
-      )
-      (kosarajuSet nfa) of
-      Just o -> case Set.lookupMax $ outgates nfa o of
-        Just g -> case Set.lookupMax $ getSuccs nfa g of
-          Just g' -> mapState eitherToFree $ fst $ internalIsolation nfa o g'
-          Nothing -> mapState Pure $ removeStates nfa o
-        Nothing -> mapState Pure $ removeStates nfa o
-      Nothing -> mapState Pure nfa
+-- -- | Performs the orbital isolation of an NFA A.
+-- orbitalIsolationNaiveStep ::
+--   (Ord state, Ord symbol) =>
+--   -- | The NFA A
+--   NFA symbol state ->
+--   -- | The resulting automaton
+--   NFA symbol (FreeEither state)
+-- orbitalIsolationNaiveStep nfa =
+--   case F.find
+--     ( not . isExtIsolated nfa
+--     )
+--     (kosarajuSet nfa) of
+--     Just o -> case Set.lookupMax $ outgates nfa o of
+--       Just g -> mapState eitherToFree $ externalIsolation nfa o g
+--       Nothing -> mapState Pure $ removeStates nfa o
+--     Nothing -> case F.find
+--       ( not . isIntIsolated nfa
+--       )
+--       (kosarajuSet nfa) of
+--       Just o -> case Set.lookupMax $ outgates nfa o of
+--         Just g -> case Set.lookupMax $ getSuccs nfa g of
+--           Just g' -> mapState eitherToFree $ fst $ internalIsolation nfa o g'
+--           Nothing -> mapState Pure $ removeStates nfa o
+--         Nothing -> mapState Pure $ removeStates nfa o
+--       Nothing -> mapState Pure nfa
 
--- | Performs the orbital isolation of an NFA A.
-orbitalIsolationNaive ::
-  (Ord state, Ord symbol) =>
-  -- | The NFA A
-  NFA symbol state ->
-  -- | The resulting automaton
-  NFA symbol (FreeEither state)
-orbitalIsolationNaive nfa =
-  case F.find
-    ( not . isExtIsolated nfa
-    )
-    (kosarajuSet nfa) of
-    Just o -> case Set.lookupMax $ outgates nfa o of
-      Just g -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ externalIsolation nfa o g
-      Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
-    Nothing -> case F.find
-      ( not . isIntIsolated nfa
-      )
-      (kosarajuSet nfa) of
-      Just o -> case Set.lookupMax $ outgates nfa o of
-        Just g -> case Set.lookupMax $ getSuccs nfa g of
-          Just g' -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ fst $ internalIsolation nfa o g'
-          Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
-        Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
-      Nothing -> mapState Pure nfa
+-- -- | Performs the orbital isolation of an NFA A.
+-- orbitalIsolationNaive ::
+--   (Ord state, Ord symbol) =>
+--   -- | The NFA A
+--   NFA symbol state ->
+--   -- | The resulting automaton
+--   NFA symbol (FreeEither state)
+-- orbitalIsolationNaive nfa =
+--   case F.find
+--     ( not . isExtIsolated nfa
+--     )
+--     (kosarajuSet nfa) of
+--     Just o -> case Set.lookupMax $ outgates nfa o of
+--       Just g -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ externalIsolation nfa o g
+--       Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
+--     Nothing -> case F.find
+--       ( not . isIntIsolated nfa
+--       )
+--       (kosarajuSet nfa) of
+--       Just o -> case Set.lookupMax $ outgates nfa o of
+--         Just g -> case Set.lookupMax $ getSuccs nfa g of
+--           Just g' -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ fst $ internalIsolation nfa o g'
+--           Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
+--         Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
+--       Nothing -> mapState Pure nfa
 
--- | Externally isolates the orbit o of an NFA
-orbitExternalIsolation ::
-  (Ord state, Ord symbol) =>
-  -- | The NFA A
-  NFA symbol (FreeEither state) ->
-  -- | The orbit o
-  Set (FreeEither state) ->
-  -- | The resulting automaton
-  NFA symbol (FreeEither state)
-orbitExternalIsolation nfa o = aux nfa o $ Set.toList $ outgates nfa o
-  where
-    aux aut _ [] = aut
-    aux aut orb (g : gs) = aux (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) $ fmap (Free . MonoEither . Left) gs
+-- -- | Externally isolates the orbit o of an NFA
+-- orbitExternalIsolation ::
+--   (Ord state, Ord symbol) =>
+--   -- | The NFA A
+--   NFA symbol (FreeEither state) ->
+--   -- | The orbit o
+--   Set (FreeEither state) ->
+--   -- | The resulting automaton
+--   NFA symbol (FreeEither state)
+-- orbitExternalIsolation nfa o = aux nfa o $ Set.toList $ outgates nfa o
+--   where
+--     aux aut _ [] = aut
+--     aux aut orb (g : gs) = aux (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) $ fmap (Free . MonoEither . Left) gs
 
--- | Externally isolates the orbits of an NFA
-nfaExternalIsolation ::
-  (Ord state, Ord symbol) =>
-  -- | The NFA A
-  NFA symbol state ->
-  -- | The resulting automaton
-  NFA symbol (FreeEither state)
-nfaExternalIsolation nfa = aux nfa' orbits
-  where
-    nfa' = mapState Pure nfa
-    orbits = Set.fromList <$> kosaraju nfa'
-    aux aut [] = aut
-    aux aut (o : os)
-      | isExtIsolated aut o = aux aut os
-      | otherwise = aux' aut o (Set.toList $ outgates aut o) os
-    aux' aut _ [] os = aux aut os
-    aux' aut _ [_] os = aux aut os
-    aux' aut orb (g : gs) os = aux' (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) (Free . MonoEither . Left <$> gs) (Set.map (Free . MonoEither . Left) <$> os)
+-- -- | Externally isolates the orbits of an NFA
+-- nfaExternalIsolation ::
+--   (Ord state, Ord symbol) =>
+--   -- | The NFA A
+--   NFA symbol state ->
+--   -- | The resulting automaton
+--   NFA symbol (FreeEither state)
+-- nfaExternalIsolation nfa = aux nfa' orbits
+--   where
+--     nfa' = mapState Pure nfa
+--     orbits = Set.fromList <$> kosaraju nfa'
+--     aux aut [] = aut
+--     aux aut (o : os)
+--       | isExtIsolated aut o = aux aut os
+--       | otherwise = aux' aut o (Set.toList $ outgates aut o) os
+--     aux' aut _ [] os = aux aut os
+--     aux' aut _ [_] os = aux aut os
+--     aux' aut orb (g : gs) os = aux' (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) (Free . MonoEither . Left <$> gs) (Set.map (Free . MonoEither . Left) <$> os)
 
--- | Internally isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
--- Removes orbits with no outgates.
--- New orbits can be created, and will not be necessarily internally isolated
-nfaInternalIsolationViaSuccOutgates ::
-  (Ord state, Ord symbol) =>
-  -- | The NFA A
-  NFA symbol state ->
-  -- | The resulting automaton
-  NFA symbol (FreeEither state)
-nfaInternalIsolationViaSuccOutgates nfa = aux nfa' orbits
-  where
-    nfa' = mapState Pure nfa
-    orbits = Set.fromList <$> kosaraju nfa'
-    aux aut [] = aut
-    aux aut (o : os)
-      | isIntIsolated aut o && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins) = aux aut os
-      | Set.null outs = aux (removeStates aut o) os
-      | otherwise = aux (mapState (Free . MonoEither) $ fst $ internalIsolation aut o succ_out) (Set.map (Free . MonoEither . Left) <$> os)
-      where
-        outs = outgates aut o
-        ins = ingates aut o
-        succ_out = Set.findMax $ getSuccs aut $ Set.findMax outs
+-- -- | Internally isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
+-- -- Removes orbits with no outgates.
+-- -- New orbits can be created, and will not be necessarily internally isolated
+-- nfaInternalIsolationViaSuccOutgates ::
+--   (Ord state, Ord symbol) =>
+--   -- | The NFA A
+--   NFA symbol state ->
+--   -- | The resulting automaton
+--   NFA symbol (FreeEither state)
+-- nfaInternalIsolationViaSuccOutgates nfa = aux nfa' orbits
+--   where
+--     nfa' = mapState Pure nfa
+--     orbits = Set.fromList <$> kosaraju nfa'
+--     aux aut [] = aut
+--     aux aut (o : os)
+--       | isIntIsolated aut o && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins) = aux aut os
+--       | Set.null outs = aux (removeStates aut o) os
+--       | otherwise = aux (mapState (Free . MonoEither) $ fst $ internalIsolation aut o succ_out) (Set.map (Free . MonoEither . Left) <$> os)
+--       where
+--         outs = outgates aut o
+--         ins = ingates aut o
+--         succ_out = Set.findMax $ getSuccs aut $ Set.findMax outs
 
 -- | Isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
 -- Removes orbits with no outgates or no ingates.

@@ -2,20 +2,17 @@
 
 module Test where
 
-import Control.Monad.Free (Free (Pure))
 import qualified Data.Foldable as F
 import qualified Data.Map as Map
 import Data.Set (fromList)
 import qualified Data.Set as Set
-import MonoEither (MonoEither, freeToA)
+import MonoEither (freeToA)
 import NFA
   ( NFA (NFA, delta, delta_rev, final, initial),
     addTransitionInMap,
     generateNFA,
     generateNFASuchThat,
     getStates,
-    mapState,
-    removeStates,
     reverse,
     reverseTransitionMap,
   )
@@ -28,7 +25,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, ingates, internalIsolation, isIsolatedNFA, isNFAExtIsolated, isStable, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, nfaExternalIsolation, orbitExternalIsolation, orbitalIsolationNaive, orbitalIsolationNaiveStep, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -205,103 +202,6 @@ runInOutGates = do
       print $ ingates aut o
       print "Done"
 
-runIsolationStep :: IO ()
-runIsolationStep = do
-  aut <- makeStandard . trim <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
-  _ <- toPngInImgDir "test_isolation" aut
-  let aut' = orbitalIsolationNaiveStep aut
-  _ <- toPngInImgDir "test_isolation2" aut'
-  let aut'' = orbitalIsolationNaiveStep aut'
-  _ <- toPngInImgDir "test_isolation3" aut''
-  let aut''' = orbitalIsolationNaiveStep aut''
-  _ <- toPngInImgDir "test_isolation4" aut'''
-  let aut'''' = orbitalIsolationNaiveStep aut'''
-  _ <- toPngInImgDir "test_isolation5" aut''''
-  print "Done"
-
-runIsolation :: IO ()
-runIsolation = do
-  aut <- makeStandard . trim <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
-  _ <- toPngInImgDir "test_isolationTotal" aut
-  let aut' = orbitalIsolationNaive aut
-  _ <- toPngInImgDir "test_isolationTotal2" aut'
-  print $ F.length $ getStates aut
-  print $ F.length $ getStates aut'
-  print "Done"
-
-runIsolationTest :: IO ()
-runIsolationTest = do
-  putStrLn "Start"
-  hFlush stdout
-  putStrLn "NFA generation"
-  hFlush stdout
-  aut <- trim . makeStandard . makeHomogeneous . trim <$> generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 3 6 15
-  -- _ <- toPngInImgDir "test_isolationTotal" aut
-  putStrLn "Orbital Isolation"
-  hFlush stdout
-  let aut' = orbitalIsolationNaive aut
-  -- _ <- toPngInImgDir "test_isolationTotal2" aut'
-  putStr "Nb states of aut: "
-  hFlush stdout
-  print $ F.length $ getStates aut
-  putStr "Nb states of aut': "
-  hFlush stdout
-  print $ F.length $ getStates aut'
-  putStr "aut and aut' equivalent: "
-  hFlush stdout
-  print $ Set.null $ getUsefulStates $ symDiff aut aut'
-  putStr "aut' is isolated: "
-  hFlush stdout
-  print $ isIsolatedNFA aut'
-  putStrLn "Done"
-
-runOrbitExternalIsolation :: IO ()
-runOrbitExternalIsolation = do
-  aut <- mapState Pure <$> generateNFA ['a' .. 'd'] [1 .. 20 :: Int] 2 5 25
-  let orbits = kosarajuSet aut
-  let orbit = F.find (\o -> Set.size o >= 2) orbits
-  case orbit of
-    Nothing -> print "No size >=2 orbit"
-    Just o -> do
-      _ <- toPngInImgDir "test_orbit_ext_iso" aut
-      putStr "Orbit: "
-      print o
-      putStr "Outgates: "
-      print $ outgates aut o
-      let aut' = orbitExternalIsolation aut o
-      _ <- toPngInImgDir "test_orbit_ext_iso'" aut'
-      putStr "Nb states of aut: "
-      hFlush stdout
-      print $ F.length $ getStates aut
-      putStr "Nb states of aut': "
-      hFlush stdout
-      print $ F.length $ getStates aut'
-      putStr "aut and aut' equivalent: "
-      hFlush stdout
-      print $ Set.null $ getUsefulStates $ symDiff aut aut'
-      putStrLn "Done"
-
-runTotalExternalIsolation :: IO ()
-runTotalExternalIsolation = do
-  aut <- mapState (Pure @MonoEither) <$> generateNFA ['a' .. 'd'] [1 .. 20 :: Int] 2 5 25
-  _ <- toPngInImgDir "test_nfa_ext_iso" aut
-  let orbits_gates = Set.map (\o -> (o, outgates aut o)) $ kosarajuSet aut
-  putStr "Orbits: "
-  putStrLn $ toString orbits_gates
-  let aut' = nfaExternalIsolation aut
-  _ <- toPngInImgDir "test_nfa_ext_iso'" aut'
-  putStr "Nb states of aut: "
-  hFlush stdout
-  print $ F.length $ getStates aut
-  putStr "Nb states of aut': "
-  hFlush stdout
-  print $ F.length $ getStates aut'
-  putStr "aut and aut' equivalent: "
-  hFlush stdout
-  print $ Set.null $ getUsefulStates $ symDiff aut aut'
-  putStr "aut' externally isolated: "
-  print $ isNFAExtIsolated aut'
-
 runTotalIsolation :: IO ()
 runTotalIsolation = do
   aut <- trim <$> generateNFA ['a' .. 'e'] [1 .. 30 :: Int] 3 7 45
@@ -373,14 +273,6 @@ runStabilization = do
   putStr "aut' trim: "
   hFlush stdout
   print $ isTrim aut'
-
-  -- putStrLn "Printing aut"
-  -- hFlush stdout
-  -- _ <- toPngInImgDir "test_nfa_iso" aut
-
-  -- putStrLn "Printing aut'"
-  -- hFlush stdout
-  -- _ <- toPngInImgDir "test_nfa_iso'" aut'
 
   putStrLn "Done"
 

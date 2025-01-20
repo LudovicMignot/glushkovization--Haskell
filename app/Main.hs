@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Test (runIsolationTest)
+import Test (runStabilization)
 
 main :: IO ()
-main = runIsolationTest
+main = runStabilization
