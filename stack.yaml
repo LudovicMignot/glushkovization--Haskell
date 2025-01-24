@@ -17,7 +17,7 @@
 #
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
-snapshot: lts-22.35
+snapshot:  nightly-2025-01-23
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,6 +40,12 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 # extra-deps: []
+extra-deps:
+- reflex-0.9.3.3
+- reflex-dom-core-0.8.1.2
+- monoidal-containers-0.6.5.0
+- patch-0.0.8.4
+- jsaddle-warp-0.9.9.2
 
 # Override default flag values for project packages and extra-deps
 # flags: {}
@@ -64,7 +70,3 @@ packages:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
-
-build:
-  library-profiling: true
-  executable-profiling: true

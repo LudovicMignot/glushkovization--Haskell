@@ -3,10 +3,45 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: reflex-0.9.3.3@sha256:a9ea57dc29765968a8dc3e1c50dbe247a9dfbede1af54aa97c9fe86df3eed186,12222
+    pantry-tree:
+      sha256: 8134d89dd18769c02a04a4e31978665be6812cefcc269dad0e7923e1d9eaf2bc
+      size: 4664
+  original:
+    hackage: reflex-0.9.3.3
+- completed:
+    hackage: reflex-dom-core-0.8.1.2@sha256:805c3c0bd60684892255b2c110fd98c98022b27a6d2830a1910866533c8e781c,8097
+    pantry-tree:
+      sha256: 60b9a227d505c23ea9c4344d071633d0de7b87fbb3c981b27e7426fac4a15652
+      size: 2734
+  original:
+    hackage: reflex-dom-core-0.8.1.2
+- completed:
+    hackage: monoidal-containers-0.6.5.0@sha256:15a08da08022bb30d2ae56040cd75e5c694d4c0826412597b82d21d90564c188,2338
+    pantry-tree:
+      sha256: c410fd95e81b366a830acfa91e922cc83f71d33b300e964c4bffbbc6fc378de3
+      size: 569
+  original:
+    hackage: monoidal-containers-0.6.5.0
+- completed:
+    hackage: patch-0.0.8.4@sha256:00904a2f2e6b9bef71b12a5200bc047d6e108af3ad74954eed1795e419949bed,3368
+    pantry-tree:
+      sha256: 3f5acd11096aeba4066b8f95438a68f3ee9b313521c39427730b11f2da4477ae
+      size: 1179
+  original:
+    hackage: patch-0.0.8.4
+- completed:
+    hackage: jsaddle-warp-0.9.9.2@sha256:85c592bd70640766e9b5fa33bc07d04c8cc312f678d0e2bb2e7333d5f88282b7,3374
+    pantry-tree:
+      sha256: eab9611a25f6b729d23060984570ff0d50b628baf617255b65d335affa63f91c
+      size: 784
+  original:
+    hackage: jsaddle-warp-0.9.9.2
 snapshots:
 - completed:
-    sha256: 31a722458578b1f709b6fe098d9027bbb5c04b4430e7338a5e69707bd3990e5d
-    size: 720019
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/35.yaml
-  original: lts-22.35
+    sha256: 3aacf13abf5e3169dcf40bc610d514089cfc2db9c6ea9840a7f7499536c325a1
+    size: 631518
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/1/23.yaml
+  original: nightly-2025-01-23

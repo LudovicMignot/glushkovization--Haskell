@@ -31,6 +31,9 @@ dependencies:
 - mtl
 - extra
 - free
+- reflex
+- reflex-dom-core
+- jsaddle-warp
 
 ghc-options:
 - -Wall
@@ -51,8 +54,6 @@ executables:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
-    - -prof
-    - -fprof-auto
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
