@@ -34,6 +34,7 @@ dependencies:
 - reflex
 - reflex-dom-core
 - jsaddle-warp
+- bytestring
 
 ghc-options:
 - -Wall

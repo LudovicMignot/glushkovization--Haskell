@@ -47,6 +47,7 @@ library
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , bytestring
     , containers
     , directory
     , extra
@@ -73,6 +74,7 @@ executable glushkovization-exe
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , bytestring
     , containers
     , directory
     , extra
@@ -101,6 +103,7 @@ test-suite glushkovization-test
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , bytestring
     , containers
     , directory
     , extra

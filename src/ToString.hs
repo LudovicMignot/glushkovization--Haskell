@@ -3,11 +3,12 @@
 module ToString where
 
 import Control.Monad.Free (Free (Free, Pure))
-import Data.Char (toUpper)
+import Data.Char (toUpper, chr)
 import Data.List (intercalate)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import MonoEither (FreeEither, MonoEither (MonoEither))
+import qualified Data.ByteString as BS
 
 -- | String conversion from a type
 class ToString a where
@@ -32,6 +33,9 @@ class ToString a where
   -- | String printing
   myPrintLn :: a -> IO ()
   myPrintLn x = putStrLn $ toString x
+
+instance ToString BS.ByteString where
+  toString bs = chr . fromEnum <$> BS.unpack bs
 
 instance ToString Bool where
   toString True = "true"
