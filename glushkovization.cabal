@@ -65,6 +65,7 @@ library
 executable glushkovization-exe
   main-is: Main.hs
   other-modules:
+      Widget
       Paths_glushkovization
   autogen-modules:
       Paths_glushkovization
