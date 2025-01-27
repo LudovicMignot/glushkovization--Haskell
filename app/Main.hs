@@ -9,16 +9,19 @@ import qualified Data.Map as Map
 import Language.Javascript.JSaddle.Warp (run)
 import NFA (NFA, generateNFA)
 import NFAAccessibility (trim)
+import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPS, trimPS)
 import Reflex.Dom.Core
   ( DomBuilder,
     MonadHold (holdDyn),
     MonadWidget,
+    foldDyn,
+    leftmost,
     mainWidgetWithHead,
     (=:),
   )
-import Reflex.Dom.Widget
+import Reflex.Dom.Widget (dyn, el, elAttr, text)
 import ToString (ToString)
-import Widget
+import Widget (labelledButton, svgAut)
 
 main :: IO ()
 main = run 3911 $ mainWidgetWithHead header body
@@ -38,9 +41,12 @@ body = do
   _ <- elAttr "div" ("class" =: "container") $ do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
-  aut <- liftIO $ generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
-  rec aut_dyn <- holdDyn aut $ fmap (\_ -> trim aut) evt
+  aut <- liftIO $ PSNFA <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
+  rec aut_dyn <- foldDyn (\f auto -> f auto) aut $ leftmost [((\() -> trimPS) <$> evt), ((\() -> makeHomogeneousPS) <$> evt2), ((\() -> makeStandardPS) <$> evt3), ((\() -> renumStatesPS) <$> evt4)]
       evt <- labelledButton "trim"
+      evt2 <- labelledButton "makeHomogeneous"
+      evt3 <- labelledButton "makeStandard"
+      evt4 <- labelledButton "renum"
   _ <-
     dyn $
       theContent
@@ -64,11 +70,9 @@ footer = do
 
 theContent ::
   ( MonadWidget t m,
-    ToString symbol,
-    ToString state,
-    Ord state
+    ToString symbol
   ) =>
-  NFA symbol state ->
+  PSNFA symbol ->
   m ()
 theContent aut =
   elAttr

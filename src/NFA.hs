@@ -5,7 +5,7 @@ module NFA where
 
 import qualified Data.Foldable as F (Foldable (foldMap'), fold, foldMap, foldl')
 import Data.Map (Map)
-import qualified Data.Map as Map (adjust, delete, empty, foldMapWithKey, foldlWithKey', insert, insertWith, keysSet, lookup, map, singleton, toList, unionWith)
+import qualified Data.Map as Map (adjust, delete, empty, foldMapWithKey, foldlWithKey', fromList, insert, insertWith, keysSet, lookup, map, singleton, toList, unionWith, (!))
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set (difference, disjoint, empty, filter, fromList, insert, intersection, map, member, singleton, toList, unions)
@@ -92,6 +92,12 @@ removeStates nfa qs = NFA (Set.difference (initial nfa) qs) (Set.difference (fin
 -- | Restricts the successor of a state to the ones contained in a set of state
 restrictSuccs :: (Ord state) => state -> Set state -> Transitions state symbol -> Transitions state symbol
 restrictSuccs p qs = Map.adjust (Map.map (Set.intersection qs)) p
+
+-- | Relabelled the states of an NFA with n states to be in the range [0..n-1]
+renumStates :: (Ord state) => NFA symbol state -> NFA symbol Int
+renumStates aut = mapState (the_map Map.!) aut
+  where
+    the_map = Map.fromList $ zip (Set.toList $ getStates aut) [0 :: Int ..]
 
 -- * The Arbitrary Instance
 

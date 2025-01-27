@@ -20,6 +20,7 @@ import Data.Text as Te
 import qualified Data.Text.Lazy as Tel
 import NFA (NFA)
 import NFADotRepr (nfaToDot)
+import PSNFA (PSNFA, nfaToDotPS)
 import Reflex.Dom.Core
   ( EventName (Click),
     MonadWidget,
@@ -33,17 +34,15 @@ import ToString (ToString (toString))
 
 svgAut ::
   ( MonadWidget t m,
-    ToString symbol,
-    ToString state,
-    Ord state
+    ToString symbol
   ) =>
-  NFA symbol state ->
+  PSNFA symbol ->
   m ()
 svgAut auto = do
   let getData handle = do
         bytes <- BS.hGetContents handle
         return $ Te.pack $ toString bytes
-  svg <- liftIO $ graphvizWithHandle Dot (parseDotGraph $ Tel.pack $ nfaToDot auto :: G.DotGraph String) Svg getData
+  svg <- liftIO $ graphvizWithHandle Dot (parseDotGraph $ Tel.pack $ nfaToDotPS auto :: G.DotGraph String) Svg getData
   void $ elDynHtml' "div" $ return svg
 
 labelledButton :: (MonadWidget t m) => Text -> m (Event t ())

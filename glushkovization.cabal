@@ -65,6 +65,7 @@ library
 executable glushkovization-exe
   main-is: Main.hs
   other-modules:
+      PSNFA
       Widget
       Paths_glushkovization
   autogen-modules:
