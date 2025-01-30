@@ -7,12 +7,10 @@ module Main (main) where
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import qualified Data.Map as Map
 import Language.Javascript.JSaddle.Warp (run)
-import NFA (NFA, generateNFA)
-import NFAAccessibility (trim)
+import NFA (generateNFA)
 import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPS, trimPS)
 import Reflex.Dom.Core
   ( DomBuilder,
-    MonadHold (holdDyn),
     MonadWidget,
     foldDyn,
     leftmost,
