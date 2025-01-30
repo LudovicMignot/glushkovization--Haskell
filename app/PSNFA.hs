@@ -31,5 +31,5 @@ nfaToDotPS :: (ToString symbol) => PSNFA symbol -> String
 nfaToDotPS (PSNFA nfa) = nfaToDot nfa
 
 -- | Renumbers the states of a n-state PSNFA to be in the range [0 .. n -1]
-renumStatesPS :: PSNFA symbol -> PSNFA symbol
-renumStatesPS (PSNFA nfa) = PSNFA $ renumStates nfa
+renumStatesPStoNFA :: PSNFA symbol -> NFA symbol Int
+renumStatesPStoNFA (PSNFA nfa) = renumStates nfa

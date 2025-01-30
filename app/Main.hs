@@ -7,8 +7,8 @@ module Main (main) where
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import qualified Data.Map as Map
 import Language.Javascript.JSaddle.Warp (run)
-import NFA (generateNFA)
-import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPS, trimPS)
+import NFA (NFA, generateNFA, renumStates)
+import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 import Reflex.Dom.Core
   ( DomBuilder,
     MonadWidget,
@@ -39,8 +39,8 @@ body = do
   _ <- elAttr "div" ("class" =: "container") $ do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
-  aut <- liftIO $ PSNFA <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
-  rec aut_dyn <- foldDyn (\f auto -> f auto) aut $ leftmost [((\() -> trimPS) <$> evt), ((\() -> makeHomogeneousPS) <$> evt2), ((\() -> makeStandardPS) <$> evt3), ((\() -> renumStatesPS) <$> evt4)]
+  aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
+  rec aut_dyn <- foldDyn ($) aut $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4]
       evt <- labelledButton "trim"
       evt2 <- labelledButton "makeHomogeneous"
       evt3 <- labelledButton "makeStandard"
@@ -50,30 +50,35 @@ body = do
       theContent
         <$> aut_dyn
   footer
+  where
+    trimPS' (Left aut) = Right $ trimPS $ PSNFA aut
+    trimPS' (Right aut) = Right $ trimPS aut
+    makeHomogeneousPS' (Left aut) = Right $ makeHomogeneousPS $ PSNFA aut
+    makeHomogeneousPS' (Right aut) = Right $ makeHomogeneousPS aut
+    makeStandardPS' (Left aut) = Right $ makeStandardPS $ PSNFA aut
+    makeStandardPS' (Right aut) = Right $ makeStandardPS aut
+    renumStatesPS' (Left aut) = Left $ renumStates aut
+    renumStatesPS' (Right aut) = Left $ renumStatesPStoNFA aut
 
 footer :: (DomBuilder t m) => m ()
 footer = do
-  -- elAttr "script" (Map.fromList [("defer", "defer"), ("src", jqueryCDN)]) $
-  --   return ()
-  -- elAttr "script" (Map.fromList [("defer", "defer"), ("src", popperCDN)]) $
-  --   return ()
   elAttr "script" (Map.fromList [("defer", "defer"), ("src", bootstrapJsCDN)]) $
     return ()
   where
-    -- jqueryCDN =  "https://code.jquery.com/jquery-3.3.1.min.js"
-    -- popperCDN =
-    --    "https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
     bootstrapJsCDN =
       "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
 
 theContent ::
-  ( MonadWidget t m,
-    ToString symbol
+  ( MonadWidget t m
   ) =>
-  PSNFA symbol ->
+  Either (NFA Char Int) (PSNFA Char) ->
   m ()
 theContent aut =
   elAttr
     "div"
     ("class" =: "d-flex flex-column align-items-center")
-    $ svgAut aut
+    $ svgAut
+    $ toPSNFA aut
+  where
+    toPSNFA (Right auto) = auto
+    toPSNFA (Left auto) = PSNFA auto

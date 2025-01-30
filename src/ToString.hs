@@ -3,12 +3,12 @@
 module ToString where
 
 import Control.Monad.Free (Free (Free, Pure))
-import Data.Char (toUpper, chr)
+import qualified Data.ByteString as BS
+import Data.Char (chr, toUpper)
 import Data.List (intercalate)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import MonoEither (FreeEither, MonoEither (MonoEither))
-import qualified Data.ByteString as BS
 
 -- | String conversion from a type
 class ToString a where
@@ -80,6 +80,9 @@ instance (ToString a) => ToString [a] where
 instance (ToString a) => ToString (Maybe a) where
   toString Nothing = "⊥"
   toString (Just x) = "J " ++ toString x
+
+  toHtmlString Nothing = "_"
+  toHtmlString (Just x) = "J " ++ toHtmlString x
 
 instance (ToString a, ToString b) => ToString (Either a b) where
   toString (Left a) = "Left " ++ toString a

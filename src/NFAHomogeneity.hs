@@ -17,7 +17,7 @@ isHomogeneous ::
   NFA symbol state ->
   -- | The Boolean "A is homogeneous"
   Bool
-isHomogeneous nfa = all (null . tail . nub) $ groupBy (\(p, _) (q, _) -> p == q) $ sort $ (\(_, a, q) -> (q, a)) <$> transitionList nfa
+isHomogeneous nfa = all (null . drop 1 . nub) $ groupBy (\(p, _) (q, _) -> p == q) $ sort $ (\(_, a, q) -> (q, a)) <$> transitionList nfa
 
 -- | Computes an equivalent homogeneous NFA from an NFA by cloning the states w.r.t. the alphabet of the NFA
 makeHomogeneous ::
