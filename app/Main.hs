@@ -5,10 +5,11 @@
 module Main (main) where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Data.Either (isLeft)
 import qualified Data.Map as Map
 import Language.Javascript.JSaddle.Warp (run)
-import NFA (NFA, generateNFA, renumStates)
-import NFAAccessibility (isTrim)
+import NFA (NFA, generateNFA, renumStates, switchFinal, switchInit, switchTrans)
+import NFAAccessibility (isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
 import NFAStandard (isStandard)
 import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
@@ -22,7 +23,7 @@ import Reflex.Dom.Core
     (=:),
   )
 import Reflex.Dom.Widget (dyn, el, elAttr, text)
-import Widget (labelledButton, svgAut)
+import Widget (labelledButton, lecteurInt, lecteurTrans, svgAut)
 
 main :: IO ()
 main = run 3911 $ mainWidgetWithHead header body
@@ -43,26 +44,35 @@ body = do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
-  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6]
+  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9]
       evt <- labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
       evt2 <- labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
       evt3 <- labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
       evt4 <- labelledButton "renum" $ constDyn True
       evt5 <- labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)
       evt6 <- labelledButton ">" ((\(_x, _y, z) -> not $ null z) <$> aut_dyn)
+      evt7 <- lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
+      evt8 <- lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
+      evt9 <- lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
   _ <-
     dyn $
       theContent . (\(_x, y, _z) -> y)
         <$> aut_dyn
   footer
   where
+    switchInit' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchInit i aut, [])
+    switchInit' _m_int au = au
+    switchFinal' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchFinal i aut, [])
+    switchFinal' _m_int au = au
+    switchTrans' (Just t) (before, Left aut, _after) = (Left aut : before, Left $ switchTrans t aut, [])
+    switchTrans' _m_int au = au
     isNotTrimPS' (Left aut) = not $ isTrim aut
     isNotTrimPS' (Right aut) = not $ isTrimPS aut
     isNotHomogeneousPS' (Left aut) = not $ isHomogeneous aut
     isNotHomogeneousPS' (Right aut) = not $ isHomogeneousPS aut
     isNotStandardPS' (Left aut) = not $ isStandard aut
     isNotStandardPS' (Right aut) = not $ isStandardPS aut
-    trimPS' (before, Left aut, _after) = (Left aut : before, Right $ trimPS $ PSNFA aut, [])
+    trimPS' (before, Left aut, _after) = (Left aut : before, Left $ trim aut, [])
     trimPS' (before, Right aut, _after) = (Right aut : before, Right $ trimPS aut, [])
     makeHomogeneousPS' (before, Left aut, _after) = (Left aut : before, Right $ makeHomogeneousPS $ PSNFA aut, [])
     makeHomogeneousPS' (before, Right aut, _after) = (Right aut : before, Right $ makeHomogeneousPS aut, [])

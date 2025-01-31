@@ -8,7 +8,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map (adjust, delete, empty, foldMapWithKey, foldlWithKey', fromList, insert, insertWith, keysSet, lookup, map, singleton, toList, unionWith, (!))
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
-import qualified Data.Set as Set (difference, disjoint, empty, filter, fromList, insert, intersection, map, member, singleton, toList, unions)
+import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, fromList, insert, intersection, map, member, singleton, toList, unions)
 import Test.QuickCheck (Arbitrary, Gen, arbitrary, choose, elements, generate, sized, suchThat, vectorOf)
 
 -- * The NFA type
@@ -33,6 +33,29 @@ data NFA symbol state = NFA
   deriving (Show)
 
 -- * Modification functions
+
+-- | Switchs the initiality of a state in an NFA.
+-- If p is an initial state, it remains in the NFA even if it is not useful anymore
+switchInit :: (Ord state) => state -> NFA symbol state -> NFA symbol state
+switchInit p nfa =
+  if isInitial nfa p
+    then nfa {initial = Set.delete p (initial nfa), delta = Map.insertWith (\_new_val old_val -> old_val) p (Map.empty) (delta nfa)}
+    else nfa {initial = Set.insert p (initial nfa)}
+
+-- | Switchs the finality of a state in an NFA.
+-- If p is a final state, it remains in the NFA even if it is not useful anymore
+switchFinal :: (Ord state) => state -> NFA symbol state -> NFA symbol state
+switchFinal p nfa =
+  if isFinal nfa p
+    then nfa {final = Set.delete p (final nfa), delta = Map.insertWith (\_new_val old_val -> old_val) p (Map.empty) (delta nfa)}
+    else nfa {final = Set.insert p (final nfa)}
+
+-- | Switchs the existence of a transition (p, a, q) in an NFA
+switchTrans :: (Ord state, Ord symbol) => (state, symbol, state) -> NFA symbol state -> NFA symbol state
+switchTrans (p, a, q) nfa =
+  if q `Set.member` sendsState nfa a p
+    then nfa {delta = removeTransitionInMap (delta nfa) (p, a, q)}
+    else nfa {delta = addTransitionInMap (delta nfa) (p, a, q)}
 
 -- | Returns the successors of a given state considering a transition map
 getSuccsInTransitionMap :: (Ord state) => Transitions state symbol -> state -> Maybe (Successors state symbol)
@@ -62,6 +85,17 @@ addTransitionInMap ::
   -- | The resulting transition Map
   Transitions state symbol
 addTransitionInMap trans (p, a, q) = Map.insertWith (Map.unionWith (<>)) p (Map.singleton a (Set.singleton q)) trans
+
+-- | Removes a transition (p, a, q) in a transition Map
+removeTransitionInMap ::
+  (Ord symbol, Ord state) =>
+  -- | The transition Map
+  Transitions state symbol ->
+  -- | The transition
+  (state, symbol, state) ->
+  -- | The resulting transition Map
+  Transitions state symbol
+removeTransitionInMap trans (p, a, q) = Map.adjust (Map.adjust (Set.delete q) a) p trans
 
 -- | Adds to the successors of a state p, by a symbol a, the states in qs
 addSuccsInMap ::
