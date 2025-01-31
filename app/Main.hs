@@ -40,25 +40,33 @@ body = do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
-  rec aut_dyn <- foldDyn ($) aut $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4]
+  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6]
       evt <- labelledButton "trim"
       evt2 <- labelledButton "makeHomogeneous"
       evt3 <- labelledButton "makeStandard"
       evt4 <- labelledButton "renum"
+      evt5 <- labelledButton "<"
+      evt6 <- labelledButton ">"
   _ <-
     dyn $
-      theContent
+      theContent . (\(_x, y, _z) -> y)
         <$> aut_dyn
   footer
   where
-    trimPS' (Left aut) = Right $ trimPS $ PSNFA aut
-    trimPS' (Right aut) = Right $ trimPS aut
-    makeHomogeneousPS' (Left aut) = Right $ makeHomogeneousPS $ PSNFA aut
-    makeHomogeneousPS' (Right aut) = Right $ makeHomogeneousPS aut
-    makeStandardPS' (Left aut) = Right $ makeStandardPS $ PSNFA aut
-    makeStandardPS' (Right aut) = Right $ makeStandardPS aut
-    renumStatesPS' (Left aut) = Left $ renumStates aut
-    renumStatesPS' (Right aut) = Left $ renumStatesPStoNFA aut
+    trimPS' (before, Left aut, _after) = (Left aut : before, Right $ trimPS $ PSNFA aut, [])
+    trimPS' (before, Right aut, _after) = (Right aut : before, Right $ trimPS aut, [])
+    makeHomogeneousPS' (before, Left aut, _after) = (Left aut : before, Right $ makeHomogeneousPS $ PSNFA aut, [])
+    makeHomogeneousPS' (before, Right aut, _after) = (Right aut : before, Right $ makeHomogeneousPS aut, [])
+    makeStandardPS' (before, Left aut, _after) = (Left aut : before, Right $ makeStandardPS $ PSNFA aut, [])
+    makeStandardPS' (before, Right aut, _after) = (Right aut : before, Right $ makeStandardPS aut, [])
+    renumStatesPS' (before, Left aut, _after) = (Left aut : before, Left $ renumStates aut, [])
+    renumStatesPS' (before, Right aut, _after) = (Right aut : before, Left $ renumStatesPStoNFA aut, [])
+    prec' (before, aut, after) = case before of
+      [] -> (before, aut, after)
+      (x : xs) -> (xs, x, aut : after)
+    next' (before, aut, after) = case after of
+      [] -> (before, aut, after)
+      (x : xs) -> (aut : before, x, xs)
 
 footer :: (DomBuilder t m) => m ()
 footer = do
