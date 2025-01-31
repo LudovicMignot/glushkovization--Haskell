@@ -21,6 +21,7 @@ import qualified Data.Text.Lazy as Tel
 import NFA (NFA)
 import NFADotRepr (nfaToDot)
 import PSNFA (PSNFA, nfaToDotPS)
+import Reflex (Dynamic)
 import Reflex.Dom.Core
   ( EventName (Click),
     MonadWidget,
@@ -45,7 +46,9 @@ svgAut auto = do
   svg <- liftIO $ graphvizWithHandle Dot (parseDotGraph $ Tel.pack $ nfaToDotPS auto :: G.DotGraph String) Svg getData
   void $ elDynHtml' "div" $ return svg
 
-labelledButton :: (MonadWidget t m) => Text -> m (Event t ())
-labelledButton lbl = do
-  (e, _) <- elAttr' "div" ("class" =: "btn btn-primary mx-1") $ text lbl
+labelledButton :: (MonadWidget t m) => Text -> Dynamic t Bool -> m (Event t ())
+labelledButton lbl isActive = do
+  (e, _) <- elDynAttr' "div" ((\b -> "class" =: ("btn btn-primary mx-1" <> active b)) <$> isActive) $ text lbl
   return $ () <$ domEvent Click e
+  where
+    active isActive' = if isActive' then " active" else " disabled"

@@ -8,7 +8,11 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import qualified Data.Map as Map
 import Language.Javascript.JSaddle.Warp (run)
 import NFA (NFA, generateNFA, renumStates)
-import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
+import NFAAccessibility (isTrim)
+import NFAHomogeneity (isHomogeneous)
+import NFAStandard (isStandard)
+import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
+import Reflex (constDyn)
 import Reflex.Dom.Core
   ( DomBuilder,
     MonadWidget,
@@ -18,7 +22,6 @@ import Reflex.Dom.Core
     (=:),
   )
 import Reflex.Dom.Widget (dyn, el, elAttr, text)
-import ToString (ToString)
 import Widget (labelledButton, svgAut)
 
 main :: IO ()
@@ -41,18 +44,24 @@ body = do
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
   rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6]
-      evt <- labelledButton "trim"
-      evt2 <- labelledButton "makeHomogeneous"
-      evt3 <- labelledButton "makeStandard"
-      evt4 <- labelledButton "renum"
-      evt5 <- labelledButton "<"
-      evt6 <- labelledButton ">"
+      evt <- labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
+      evt2 <- labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
+      evt3 <- labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
+      evt4 <- labelledButton "renum" $ constDyn True
+      evt5 <- labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)
+      evt6 <- labelledButton ">" ((\(_x, _y, z) -> not $ null z) <$> aut_dyn)
   _ <-
     dyn $
       theContent . (\(_x, y, _z) -> y)
         <$> aut_dyn
   footer
   where
+    isNotTrimPS' (Left aut) = not $ isTrim aut
+    isNotTrimPS' (Right aut) = not $ isTrimPS aut
+    isNotHomogeneousPS' (Left aut) = not $ isHomogeneous aut
+    isNotHomogeneousPS' (Right aut) = not $ isHomogeneousPS aut
+    isNotStandardPS' (Left aut) = not $ isStandard aut
+    isNotStandardPS' (Right aut) = not $ isStandardPS aut
     trimPS' (before, Left aut, _after) = (Left aut : before, Right $ trimPS $ PSNFA aut, [])
     trimPS' (before, Right aut, _after) = (Right aut : before, Right $ trimPS aut, [])
     makeHomogeneousPS' (before, Left aut, _after) = (Left aut : before, Right $ makeHomogeneousPS $ PSNFA aut, [])
