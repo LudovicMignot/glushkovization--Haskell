@@ -7,12 +7,13 @@ module Main (main) where
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Either (isLeft)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Text (pack)
 import Language.Javascript.JSaddle.Warp (run)
-import NFA (NFA, generateNFA, renumStates, switchFinal, switchInit, switchTrans)
+import NFA (NFA, generateNFA, getStates, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
-import NFAOrbit (kosaraju)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosarajuSet, outgates)
 import NFAStandard (isStandard)
 import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, kosarajuStringPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 import Reflex (constDyn)
@@ -40,7 +41,7 @@ body = do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
-  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9]
+  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11]
       evt <- labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
       evt2 <- labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
       evt3 <- labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
@@ -50,6 +51,8 @@ body = do
       evt7 <- lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
       evt8 <- lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
       evt9 <- lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
+      evt10 <- lecteurInt "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol"
+      evt11 <- lecteurInt "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol"
   _ <-
     dyn $
       theContent . (\(_x, y, _z) -> y)
@@ -57,6 +60,16 @@ body = do
   _ <- dynText $ kosarajuStringPS' . (\(_x, y, _z) -> y) <$> aut_dyn
   footer
   where
+    extIsol' (Just i) (before, Left aut, _after)
+      | i `Set.member` (getStates aut `Set.intersection` outgates aut orbit_i) = (Left aut : before, Right $ PSNFA $ externalIsolation aut orbit_i i, [])
+      where
+        orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
+    extIsol' _m_int au = au
+    intIsol' (Just i) (before, Left aut, _after)
+      | i `Set.member` (getStates aut) = (Left aut : before, Right $ PSNFA $ fst $ internalIsolation aut orbit_i i, [])
+      where
+        orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
+    intIsol' _m_int au = au
     kosarajuStringPS' (Left aut) = pack $ show $ (pack . toString <$>) <$> kosaraju aut
     kosarajuStringPS' (Right aut) = pack $ show $ (pack <$>) <$> kosarajuStringPS aut
     switchInit' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchInit i aut, [])
