@@ -464,8 +464,8 @@ stabilizationNFA nfa = aux nfa' orbits
           removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
         aut_o_stab =
           -- ici ajout trim
-          -- stabilizationNFA aut_o'
-          trim $ stabilizationNFA aut_o'
+          stabilizationNFA aut_o'
+        -- trim $ stabilizationNFA aut_o'
         aut_o_stab_res = addTransitions aut_o_stab first_symb (final aut_o_stab) (F.foldMap (getSuccs aut_o_stab) $ initial aut_o_stab)
         aut' =
           -- -- ici ajout trace
