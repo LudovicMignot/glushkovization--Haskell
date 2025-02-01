@@ -7,22 +7,18 @@ module Main (main) where
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Either (isLeft)
 import qualified Data.Map as Map
+import Data.Text (pack)
 import Language.Javascript.JSaddle.Warp (run)
 import NFA (NFA, generateNFA, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
+import NFAOrbit (kosaraju)
 import NFAStandard (isStandard)
-import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
+import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, kosarajuStringPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 import Reflex (constDyn)
-import Reflex.Dom.Core
-  ( DomBuilder,
-    MonadWidget,
-    foldDyn,
-    leftmost,
-    mainWidgetWithHead,
-    (=:),
-  )
+import Reflex.Dom.Core (DomBuilder, MonadWidget, dynText, foldDyn, leftmost, mainWidgetWithHead, (=:))
 import Reflex.Dom.Widget (dyn, el, elAttr, text)
+import ToString (toString)
 import Widget (labelledButton, lecteurInt, lecteurTrans, svgAut)
 
 main :: IO ()
@@ -58,8 +54,11 @@ body = do
     dyn $
       theContent . (\(_x, y, _z) -> y)
         <$> aut_dyn
+  _ <- dynText $ kosarajuStringPS' . (\(_x, y, _z) -> y) <$> aut_dyn
   footer
   where
+    kosarajuStringPS' (Left aut) = pack $ show $ (pack . toString <$>) <$> kosaraju aut
+    kosarajuStringPS' (Right aut) = pack $ show $ (pack <$>) <$> kosarajuStringPS aut
     switchInit' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchInit i aut, [])
     switchInit' _m_int au = au
     switchFinal' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchFinal i aut, [])

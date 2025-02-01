@@ -30,9 +30,10 @@ import Data.GraphViz.Types.Monadic
     node,
   )
 import qualified Data.Map as Map (empty, foldlWithKey', insertWith)
-import qualified Data.Set as Set (difference, toList)
+import qualified Data.Set as Set (difference, fromList, intersection, member, toList, unions)
 import qualified Data.Text.Lazy as L
 import NFA (NFA (final), getStates, isInitial, transitionList)
+import NFAOrbit (ingates, kosaraju, outgates)
 import System.Directory
   ( createDirectoryIfMissing,
     getCurrentDirectory,
@@ -49,7 +50,7 @@ nfaToDot ::
   NFA symbol state ->
   -- | The dot String
   String
-nfaToDot auto = "digraph{" ++ statementList ++ "}"
+nfaToDot auto = "digraph{" ++ statementList ++ subgraphs ++ "}"
   where
     statementList = graphs ++ nodes ++ edges
     graphs = "graph [rankdir = LR];"
@@ -64,14 +65,25 @@ nfaToDot auto = "digraph{" ++ statementList ++ "}"
     myToString p = "\"" ++ toHtmlCapString p ++ "\""
     att1 p
       | isInitial auto p =
-          " [shape = octagon, peripheries = 2, style = rounded, style = filled, color = gray35" ++ ", label=<" ++ toHtmlString p ++ ">];"
+          " [shape = octagon, peripheries = 2, style = rounded, style = filled, fillcolor = gray35" ++ border p ++ ", label=<" ++ toHtmlString p ++ ">];"
       | otherwise =
-          " [shape = box, peripheries = 2, style = rounded" ++ ", label=<" ++ toHtmlString p ++ ">];"
+          " [shape = box, peripheries = 2, style = rounded" ++ border p ++ ", label=<" ++ toHtmlString p ++ ">];"
     att2 p
       | isInitial auto p =
-          " [shape = octagon, style = rounded, style = filled, color = gray35" ++ ", label=<" ++ toHtmlString p ++ ">];"
+          " [shape = octagon, style = rounded, style = filled, fillcolor = gray35" ++ border p ++ ", label=<" ++ toHtmlString p ++ ">];"
       | otherwise =
-          " [shape = box, style = rounded" ++ ", label=<" ++ toHtmlString p ++ ">];"
+          " [shape = box, style = rounded" ++ border p ++ ", label=<" ++ toHtmlString p ++ ">];"
+    border p
+      | Set.member p in_outgs = ", color = purple"
+      | Set.member p ings = ", color = blue"
+      | Set.member p outgs = ", color = red"
+      | otherwise = ""
+    orbits = kosaraju auto
+    ings = Set.unions $ ingates auto . Set.fromList <$> orbits
+    outgs = Set.unions $ outgates auto . Set.fromList <$> orbits
+    in_outgs = ings `Set.intersection` outgs
+    orbit_to_sub i o = "subgraph cluster_" ++ show i ++ " {color = \"blue\"; label = \"Orbit " ++ show i ++ "\"; " ++ concatMap (\s -> myToString s ++ ";") o ++ "} "
+    subgraphs = concatMap (\(i, o) -> orbit_to_sub i o) $ zip [1 :: Int ..] orbits
 
 -- | Converts an NFA into its dot representation, as a DotGraph String, with given name
 faToGraphviz ::

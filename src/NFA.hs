@@ -36,26 +36,33 @@ data NFA symbol state = NFA
 
 -- | Switchs the initiality of a state in an NFA.
 -- If p is an initial state, it remains in the NFA even if it is not useful anymore
-switchInit :: (Ord state) => state -> NFA symbol state -> NFA symbol state
+switchInit :: (Ord state, Ord symbol) => state -> NFA symbol state -> NFA symbol state
 switchInit p nfa =
   if isInitial nfa p
-    then nfa {initial = Set.delete p (initial nfa), delta = Map.insertWith (\_new_val old_val -> old_val) p (Map.empty) (delta nfa)}
+    then nfa {initial = Set.delete p (initial nfa), delta = new_delta, delta_rev = reverseTransitionMap new_delta}
     else nfa {initial = Set.insert p (initial nfa)}
+  where
+    new_delta = Map.insertWith (\_new_val old_val -> old_val) p (Map.empty) (delta nfa)
 
 -- | Switchs the finality of a state in an NFA.
 -- If p is a final state, it remains in the NFA even if it is not useful anymore
-switchFinal :: (Ord state) => state -> NFA symbol state -> NFA symbol state
+switchFinal :: (Ord state, Ord symbol) => state -> NFA symbol state -> NFA symbol state
 switchFinal p nfa =
   if isFinal nfa p
-    then nfa {final = Set.delete p (final nfa), delta = Map.insertWith (\_new_val old_val -> old_val) p (Map.empty) (delta nfa)}
+    then nfa {final = Set.delete p (final nfa), delta = new_delta, delta_rev = reverseTransitionMap new_delta}
     else nfa {final = Set.insert p (final nfa)}
+  where
+    new_delta = Map.insertWith (\_new_val old_val -> old_val) p (Map.empty) (delta nfa)
 
 -- | Switchs the existence of a transition (p, a, q) in an NFA
 switchTrans :: (Ord state, Ord symbol) => (state, symbol, state) -> NFA symbol state -> NFA symbol state
 switchTrans (p, a, q) nfa =
   if q `Set.member` sendsState nfa a p
-    then nfa {delta = removeTransitionInMap (delta nfa) (p, a, q)}
-    else nfa {delta = addTransitionInMap (delta nfa) (p, a, q)}
+    then nfa {delta = new_delta, delta_rev = reverseTransitionMap new_delta}
+    else nfa {delta = new_delta', delta_rev = reverseTransitionMap new_delta'}
+  where
+    new_delta = removeTransitionInMap (delta nfa) (p, a, q)
+    new_delta' = addTransitionInMap (delta nfa) (p, a, q)
 
 -- | Returns the successors of a given state considering a transition map
 getSuccsInTransitionMap :: (Ord state) => Transitions state symbol -> state -> Maybe (Successors state symbol)

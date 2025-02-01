@@ -6,8 +6,9 @@ import NFA (NFA, renumStates)
 import NFAAccessibility (isTrim, trim)
 import NFADotRepr (nfaToDot)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
+import NFAOrbit (kosaraju)
 import NFAStandard (isStandard, makeStandard)
-import ToString (ToString)
+import ToString (ToString, toString)
 
 -- | A PSNFA (Phamtom State NFA) is a wrapper around an NFA that masks the state type
 -- but ensures that the states are showable, orderable, and can be converted to strings.
@@ -45,3 +46,7 @@ nfaToDotPS (PSNFA nfa) = nfaToDot nfa
 -- | Renumbers the states of a n-state PSNFA to be in the range [0 .. n -1]
 renumStatesPStoNFA :: PSNFA symbol -> NFA symbol Int
 renumStatesPStoNFA (PSNFA nfa) = renumStates nfa
+
+-- | Returns the orbits of a PSNFA as a list of lists of Text
+kosarajuStringPS :: PSNFA symbol -> [[String]]
+kosarajuStringPS (PSNFA nfa) = (toString <$>) <$> kosaraju nfa
