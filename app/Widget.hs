@@ -89,12 +89,55 @@ readInput ident start = do
               <$> result
   return result
 
+readIntSuchThat ::
+  (MonadWidget t m) =>
+  Text ->
+  Text ->
+  (Int -> Dynamic t Bool) ->
+  m (Dynamic t (Maybe Int))
+readIntSuchThat ident start tester = do
+  let errorState =
+        Map.fromList [("class", "form-control is-invalid"), ("id", ident)]
+      validState =
+        Map.fromList [("class", "form-control is-valid"), ("id", ident)]
+  rec n <-
+        textInput $
+          def
+            & textInputConfig_inputType
+            .~ "text"
+            & textInputConfig_initialValue
+            .~ start
+            & textInputConfig_attributes
+            .~ attrs
+
+      let result = readMaybe . Te.unpack <$> _textInput_value n
+          attrs =
+            result
+              >>= ( \m_int ->
+                      case m_int of
+                        Nothing -> constDyn errorState
+                        Just i -> tester i >>= \b -> if b then constDyn validState else constDyn errorState
+                  )
+  return result
+
 lecteurInt :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> m (Event t (Maybe Int))
 lecteurInt lbl lbl_but isActive ident = el "form" $
   elAttr "div" ("class" =: "form-group") $ do
     elAttr "label" ("for" =: ident) $ text lbl
     res <- elAttr "div" ("class" =: "input-group") $ do
       m_int <- readInput "inputWord" "0"
+      evt <- labelledButton lbl_but $ ffor2 isActive m_int (\b m_int_val -> b && isJust m_int_val)
+      return $ tagPromptlyDyn m_int evt
+    elAttr "small" ("class" =: "form-text text-muted") $
+      text "Enter an integer, made of the symbols in [0 .. 9]."
+    return res
+
+lecteurIntSuchThat :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> (Int -> Dynamic t Bool) -> m (Event t (Maybe Int))
+lecteurIntSuchThat lbl lbl_but isActive ident tester = el "form" $
+  elAttr "div" ("class" =: "form-group") $ do
+    elAttr "label" ("for" =: ident) $ text lbl
+    res <- elAttr "div" ("class" =: "input-group") $ do
+      m_int <- readIntSuchThat "inputWord" "0" tester
       evt <- labelledButton lbl_but $ ffor2 isActive m_int (\b m_int_val -> b && isJust m_int_val)
       return $ tagPromptlyDyn m_int evt
     elAttr "small" ("class" =: "form-text text-muted") $

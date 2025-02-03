@@ -16,11 +16,11 @@ import NFAHomogeneity (isHomogeneous)
 import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosarajuSet, outgates)
 import NFAStandard (isStandard)
 import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, kosarajuStringPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
-import Reflex (constDyn)
+import Reflex (constDyn, ffor, performEvent)
 import Reflex.Dom.Core (DomBuilder, MonadWidget, dynText, foldDyn, leftmost, mainWidgetWithHead, (=:))
 import Reflex.Dom.Widget (dyn, el, elAttr, text)
 import ToString (toString)
-import Widget (labelledButton, lecteurInt, lecteurTrans, svgAut)
+import Widget (labelledButton, lecteurInt, lecteurIntSuchThat, lecteurTrans, svgAut)
 
 main :: IO ()
 main = run 3911 $ mainWidgetWithHead header body
@@ -40,8 +40,8 @@ body = do
   _ <- elAttr "div" ("class" =: "container") $ do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
-  aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 10] 2 2 5
-  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11]
+  aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10
+  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12]
       evt <- labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
       evt2 <- labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
       evt3 <- labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
@@ -51,8 +51,19 @@ body = do
       evt7 <- lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
       evt8 <- lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
       evt9 <- lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
-      evt10 <- lecteurInt "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol"
+      evt10 <- lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
+        \i ->
+          let isExtGate _ (Right _) = False
+              isExtGate p (Left autom) = any (\o -> p `Set.member` outgates autom o) $ Set.fromList <$> kosaraju autom
+           in (isExtGate i . \(_x, y, _z) -> y) <$> aut_dyn
       evt11 <- lecteurInt "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol"
+      evt12 <- do
+        evt_click <- labelledButton "⚅" $ constDyn True
+        performEvent $
+          ffor evt_click $
+            const $
+              (liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10)
+
   _ <-
     dyn $
       theContent . (\(_x, y, _z) -> y)
