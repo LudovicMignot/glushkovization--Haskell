@@ -345,7 +345,7 @@ isIsolatedNFA nfa = F.all (\o -> isExtIsolated nfa o && isIntIsolated nfa o) $ k
 -- Removes orbits with no outgates or no ingates.
 -- May create new orbits, that will be isolate too
 orbitalIsolationViaSuccOutgates ::
-  (Ord state, Ord symbol, ToString state) =>
+  (Ord state, Ord symbol) =>
   -- | The NFA A
   NFA symbol state ->
   -- | The resulting automaton
@@ -442,8 +442,20 @@ addTransitions aut a from to = NFA (initial aut) (final aut) delta' (reverseTran
   where
     delta' = Set.foldl' (\trans s -> addSuccsInMap trans s a to) (delta aut) from
 
+-- | Stabilizes an isolated orbit of an NFA
+stabilizeOrbit :: (Ord state, Ord symbol) => NFA symbol state -> Set state -> NFA symbol (Either state (FreeEither (Maybe state)))
+stabilizeOrbit aut o = orbitalSubstitution aut o aut_o_stab_res
+  where
+    aut_o = orbitalNFA aut o
+    (first_symb, _) = head $ Map.toList (fromJust $ Map.lookup (fromJust $ Set.lookupMax $ initial aut_o) $ delta aut_o)
+    aut_o' =
+      removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
+    aut_o_stab =
+      stabilizationNFA aut_o'
+    aut_o_stab_res = addTransitions aut_o_stab first_symb (final aut_o_stab) (F.foldMap (getSuccs aut_o_stab) $ initial aut_o_stab)
+
 -- | Stabilizes an homogeneous and standard NFA
-stabilizationNFA :: (Ord state, Ord symbol, Show state, Show symbol, ToString state) => NFA symbol state -> NFA symbol (FreeEither state)
+stabilizationNFA :: (Ord state, Ord symbol) => NFA symbol state -> NFA symbol (FreeEither state)
 stabilizationNFA nfa = aux nfa' orbits
   where
     nfa' = orbitalIsolationViaSuccOutgates nfa

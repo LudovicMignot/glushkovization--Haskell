@@ -10,10 +10,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Text (pack)
 import Language.Javascript.JSaddle.Warp (run)
-import NFA (NFA, generateNFA, getStates, renumStates, switchFinal, switchInit, switchTrans)
+import NFA (NFA, generateNFA, getPreds, getStates, getSuccs, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
-import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosarajuSet, outgates)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit)
 import NFAStandard (isStandard)
 import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, kosarajuStringPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 import Reflex (constDyn, ffor, performEvent)
@@ -41,7 +41,8 @@ body = do
     elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10
-  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12]
+  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12, orbNFA <$> evt13]
+      -- , stabOrbNFA <$> evt14 ]
       evt <- labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
       evt2 <- labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
       evt3 <- labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
@@ -63,6 +64,17 @@ body = do
           ffor evt_click $
             const $
               (liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10)
+      evt13 <- lecteurIntSuchThat "Orbital NFA" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "orbNFA" $
+        \i ->
+          let isIntStateWithSucc _ (Right _) = False
+              isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+           in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
+
+  -- evt14 <- lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
+  --   \i ->
+  --     let isIntStateWithSucc _ (Right _) = False
+  --         isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+  --      in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
 
   _ <-
     dyn $
@@ -71,6 +83,14 @@ body = do
   _ <- dynText $ kosarajuStringPS' . (\(_x, y, _z) -> y) <$> aut_dyn
   footer
   where
+    stabOrbNFA (Just i) (before, Left aut, _after) = (Left aut : before, Right $ PSNFA $ stabilizeOrbit aut orbit_i, [])
+      where
+        orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
+    stabOrbNFA _m_int au = au
+    orbNFA (Just i) (before, Left aut, _after) = (Left aut : before, Right $ PSNFA $ orbitalNFA aut orbit_i, [])
+      where
+        orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
+    orbNFA _m_int au = au
     extIsol' (Just i) (before, Left aut, _after)
       | i `Set.member` (getStates aut `Set.intersection` outgates aut orbit_i) = (Left aut : before, Right $ PSNFA $ externalIsolation aut orbit_i i, [])
       where
