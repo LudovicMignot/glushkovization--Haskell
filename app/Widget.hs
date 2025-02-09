@@ -26,7 +26,7 @@ import qualified Data.Text.Lazy as Tel
 import NFA (NFA)
 import NFADotRepr (nfaToDot)
 import PSNFA (PSNFA, nfaToDotPS)
-import Reflex (Dynamic, constDyn, ffor2, holdDyn, tagPromptlyDyn)
+import Reflex (Dynamic, constDyn, ffor2, ffor3, holdDyn, tagPromptlyDyn)
 import Reflex.Dom.Core
   ( EventName (Click),
     MonadWidget,
@@ -138,7 +138,7 @@ lecteurIntSuchThat lbl lbl_but isActive ident tester = el "form" $
     elAttr "label" ("for" =: ident) $ text lbl
     res <- elAttr "div" ("class" =: "input-group") $ do
       m_int <- readIntSuchThat "inputWord" "0" tester
-      evt <- labelledButton lbl_but $ ffor2 isActive m_int (\b m_int_val -> b && isJust m_int_val)
+      evt <- labelledButton lbl_but $ ffor3 (m_int >>= maybe (constDyn False) tester) isActive m_int (\b b' m_int_val -> b && b' && isJust m_int_val)
       return $ tagPromptlyDyn m_int evt
     elAttr "small" ("class" =: "form-text text-muted") $
       text "Enter an integer, made of the symbols in [0 .. 9]."

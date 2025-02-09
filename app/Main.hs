@@ -17,7 +17,7 @@ import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosara
 import NFAStandard (isStandard)
 import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, kosarajuStringPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 import Reflex (constDyn, ffor, performEvent)
-import Reflex.Dom.Core (DomBuilder, MonadWidget, dynText, foldDyn, leftmost, mainWidgetWithHead, (=:))
+import Reflex.Dom.Core (DomBuilder, MonadWidget, blank, dynText, foldDyn, leftmost, mainWidgetWithHead, (=:))
 import Reflex.Dom.Widget (dyn, el, elAttr, text)
 import ToString (toString)
 import Widget (labelledButton, lecteurInt, lecteurIntSuchThat, lecteurTrans, svgAut)
@@ -38,20 +38,39 @@ header =
 body :: (MonadWidget t m) => m ()
 body = do
   _ <- elAttr "div" ("class" =: "container") $ do
-    elAttr "h1" ("class" =: "text-center") $ text "Word Automata Constructions"
+    elAttr "h1" ("class" =: "text-center") $ text "Orbit Stabilization"
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10
-  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12, orbNFA <$> evt13]
-      -- , stabOrbNFA <$> evt14 ]
-      evt <- labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
-      evt2 <- labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
-      evt3 <- labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
+
+  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12, orbNFA <$> evt13, stabOrbNFA <$> evt14]
+      ((evt, evt2, evt3), (evt7, evt8, evt9)) <-
+        elAttr "div" (Map.fromList [("class", "accordion"), ("id", "accordion_menu")]) $ do
+          (,)
+            <$> ( elAttr "div" ("class" =: "accordion-item") $ do
+                    elAttr "h2" ("class" =: "accordion-header") $
+                      elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseOne")]) $
+                        text "Commands"
+                    elAttr "div" (Map.fromList [("id", "collapseOne"), ("class", "accordion-collapse collapse")]) $ do
+                      (,,)
+                        <$> labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
+                        <*> labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
+                        <*> labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
+                )
+            <*> ( elAttr "div" ("class" =: "accordion-item") $ do
+                    elAttr "h2" ("class" =: "accordion-header") $
+                      elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseTwo")]) $
+                        text "Construction"
+                    elAttr "div" (Map.fromList [("id", "collapseTwo"), ("class", "accordion-collapse collapse")]) $ do
+                      (,,)
+                        <$> lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
+                        <*> lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
+                        <*> lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
+                )
+
       evt4 <- labelledButton "renum" $ constDyn True
       evt5 <- labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)
       evt6 <- labelledButton ">" ((\(_x, _y, z) -> not $ null z) <$> aut_dyn)
-      evt7 <- lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
-      evt8 <- lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
-      evt9 <- lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
+
       evt10 <- lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
         \i ->
           let isExtGate _ (Right _) = False
@@ -69,18 +88,18 @@ body = do
           let isIntStateWithSucc _ (Right _) = False
               isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
            in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
-
-  -- evt14 <- lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
-  --   \i ->
-  --     let isIntStateWithSucc _ (Right _) = False
-  --         isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
-  --      in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
+      evt14 <- lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
+        \i ->
+          let isIntStateWithSucc _ (Right _) = False
+              isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+           in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
 
   _ <-
     dyn $
       theContent . (\(_x, y, _z) -> y)
         <$> aut_dyn
-  _ <- dynText $ kosarajuStringPS' . (\(_x, y, _z) -> y) <$> aut_dyn
+
+  -- _ <- dynText $ kosarajuStringPS' . (\(_x, y, _z) -> y) <$> aut_dyn
   footer
   where
     stabOrbNFA (Just i) (before, Left aut, _after) = (Left aut : before, Right $ PSNFA $ stabilizeOrbit aut orbit_i, [])
