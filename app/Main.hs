@@ -13,7 +13,7 @@ import Language.Javascript.JSaddle.Warp (run)
 import NFA (NFA, generateNFA, getPreds, getStates, getSuccs, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
-import NFAOrbit (externalIsolation, ingates, internalIsolation, kosaraju, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, isExtIsolated, isIntIsolated, kosaraju, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit)
 import NFAStandard (isStandard)
 import PSNFA (PSNFA (PSNFA), isHomogeneousPS, isStandardPS, isTrimPS, kosarajuStringPS, makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 import Reflex (constDyn, ffor, performEvent)
@@ -42,62 +42,84 @@ body = do
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10
 
-  rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12, orbNFA <$> evt13, stabOrbNFA <$> evt14]
-      ((evt, evt2, evt3), (evt7, evt8, evt9)) <-
-        elAttr "div" (Map.fromList [("class", "accordion"), ("id", "accordion_menu")]) $ do
-          (,)
-            <$> ( elAttr "div" ("class" =: "accordion-item") $ do
-                    elAttr "h2" ("class" =: "accordion-header") $
-                      elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseOne")]) $
-                        text "Commands"
-                    elAttr "div" (Map.fromList [("id", "collapseOne"), ("class", "accordion-collapse collapse")]) $ do
-                      (,,)
-                        <$> labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
-                        <*> labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
-                        <*> labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
-                )
-            <*> ( elAttr "div" ("class" =: "accordion-item") $ do
-                    elAttr "h2" ("class" =: "accordion-header") $
-                      elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseTwo")]) $
-                        text "Construction"
-                    elAttr "div" (Map.fromList [("id", "collapseTwo"), ("class", "accordion-collapse collapse")]) $ do
-                      (,,)
-                        <$> lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
-                        <*> lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
-                        <*> lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
-                )
+  elAttr "div" ("class" =: "d-flex flex-row") $ do
+    rec aut_dyn <- foldDyn ($) ([], aut, []) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut _ -> ([], new_aut, [])) <$> evt12, orbNFA <$> evt13, stabOrbNFA <$> evt14]
+        ((evt, evt2, evt3), (evt7, evt8, evt9, evt12), (evt10, evt11, evt13, evt14)) <-
+          elAttr "div" (Map.fromList [("class", "accordion w-25"), ("id", "accordion_menu")]) $ do
+            (,,)
+              <$> ( elAttr "div" ("class" =: "accordion-item") $ do
+                      elAttr "h2" ("class" =: "accordion-header") $
+                        elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseOne")]) $
+                          text "Commands"
+                      elAttr "div" (Map.fromList [("id", "collapseOne"), ("class", "accordion-collapse collapse")]) $
+                        elAttr "div" (Map.fromList [("role", "group"), ("class", "btn-group m-2")]) $
+                          (,,)
+                            <$> labelledButton "trim" ((\(_x, y, _z) -> isNotTrimPS' y) <$> aut_dyn)
+                            <*> labelledButton "makeHomogeneous" ((\(_x, y, _z) -> isNotHomogeneousPS' y) <$> aut_dyn)
+                            <*> labelledButton "makeStandard" ((\(_x, y, _z) -> isNotStandardPS' y) <$> aut_dyn)
+                  )
+              <*> ( elAttr "div" ("class" =: "accordion-item") $ do
+                      elAttr "h2" ("class" =: "accordion-header") $
+                        elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseTwo")]) $
+                          text "Construction"
+                      elAttr "div" (Map.fromList [("id", "collapseTwo"), ("class", "accordion-collapse collapse")]) $ do
+                        (,,,)
+                          <$> lecteurInt "Switch initiality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "initText"
+                          <*> lecteurInt "Switch finality of a state" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "finalText"
+                          <*> lecteurTrans "Switch existence of a transition" "Switch" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "transText"
+                          <*> do
+                            evt_click <- labelledButton "⚅" $ constDyn True
+                            performEvent $
+                              ffor evt_click $
+                                const $
+                                  (liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10)
+                  )
+              <*> ( elAttr "div" ("class" =: "accordion-item") $
+                      do
+                        elAttr "h2" ("class" =: "accordion-header") $
+                          elAttr "button" (Map.fromList [("class", "accordion-button"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseThree")]) $
+                            text "Orbital operations"
+                        elAttr "div" (Map.fromList [("id", "collapseThree"), ("class", "accordion-collapse collapse")]) $
+                          (,,,)
+                            <$> ( lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
+                                    \i ->
+                                      let isExtGate _ (Right _) = False
+                                          isExtGate p (Left autom) = any (\o -> p `Set.member` outgates autom o) $ Set.fromList <$> kosaraju autom
+                                       in (isExtGate i . \(_x, y, _z) -> y) <$> aut_dyn
+                                )
+                            <*> lecteurInt "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol"
+                            <*> ( lecteurIntSuchThat "Orbital NFA" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "orbNFA" $
+                                    \i ->
+                                      let isIntStateWithPred _ (Right _) = False
+                                          isIntStateWithPred p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+                                       in (isIntStateWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
+                                )
+                            <*> ( lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
+                                    \i ->
+                                      let isInIsolatedOrbWithPred _ (Right _) = False
+                                          isInIsolatedOrbWithPred p (Left autom) =
+                                            let o = Set.unions $ filter (p `Set.member`) $ Set.fromList <$> kosaraju autom
+                                             in isExtIsolated autom o && isIntIsolated autom o && p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+                                       in (isInIsolatedOrbWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
+                                )
+                  )
+        (evt4, evt5, evt6) <- elAttr "div" ("class" =: "d-flex flex-column w-75") $ do
+          evts <-
+            elAttr "div" (Map.fromList [("role", "group"), ("class", "btn-group")]) $
+              (,,)
+                <$> (labelledButton "renum" $ constDyn True)
+                <*> labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)
+                <*> labelledButton ">" ((\(_x, _y, z) -> not $ null z) <$> aut_dyn)
 
-      evt4 <- labelledButton "renum" $ constDyn True
-      evt5 <- labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)
-      evt6 <- labelledButton ">" ((\(_x, _y, z) -> not $ null z) <$> aut_dyn)
+          _ <-
+            dyn $
+              theContent . (\(_x, y, _z) -> y)
+                <$> aut_dyn
 
-      evt10 <- lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
-        \i ->
-          let isExtGate _ (Right _) = False
-              isExtGate p (Left autom) = any (\o -> p `Set.member` outgates autom o) $ Set.fromList <$> kosaraju autom
-           in (isExtGate i . \(_x, y, _z) -> y) <$> aut_dyn
-      evt11 <- lecteurInt "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol"
-      evt12 <- do
-        evt_click <- labelledButton "⚅" $ constDyn True
-        performEvent $
-          ffor evt_click $
-            const $
-              (liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10)
-      evt13 <- lecteurIntSuchThat "Orbital NFA" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "orbNFA" $
-        \i ->
-          let isIntStateWithSucc _ (Right _) = False
-              isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
-           in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
-      evt14 <- lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
-        \i ->
-          let isIntStateWithSucc _ (Right _) = False
-              isIntStateWithSucc p (Left autom) = p `Set.member` getStates autom && not (Set.null (getPreds autom p))
-           in (isIntStateWithSucc i . \(_x, y, _z) -> y) <$> aut_dyn
+          return evts
 
-  _ <-
-    dyn $
-      theContent . (\(_x, y, _z) -> y)
-        <$> aut_dyn
+        return ()
+    return ()
 
   -- _ <- dynText $ kosarajuStringPS' . (\(_x, y, _z) -> y) <$> aut_dyn
   footer
