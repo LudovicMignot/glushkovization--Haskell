@@ -21,12 +21,9 @@ import Data.Text as Te
     pack,
     unpack,
   )
-import Data.Text.Lazy (unpack)
 import qualified Data.Text.Lazy as Tel
-import NFA (NFA)
-import NFADotRepr (nfaToDot)
 import PSNFA (PSNFA, nfaToDotPS)
-import Reflex (Dynamic, constDyn, ffor2, ffor3, holdDyn, tagPromptlyDyn)
+import Reflex (Dynamic, constDyn, ffor2, ffor3, tagPromptlyDyn)
 import Reflex.Dom.Core
   ( EventName (Click),
     MonadWidget,
@@ -36,6 +33,19 @@ import Reflex.Dom.Core
     (=:),
   )
 import Reflex.Dom.Widget
+  ( TextInput (_textInput_value),
+    def,
+    el,
+    elAttr,
+    elDynAttr',
+    text,
+    textInput,
+    textInputConfig_attributes,
+    textInputConfig_initialValue,
+    textInputConfig_inputType,
+    (&),
+    (.~),
+  )
 import Text.Read (readMaybe)
 import ToString (ToString (toString))
 
@@ -54,10 +64,11 @@ svgAut auto = do
 
 labelledButton :: (MonadWidget t m) => Text -> Dynamic t Bool -> m (Event t ())
 labelledButton lbl isActive = do
-  (e, _) <- elDynAttr' "div" ((\b -> "class" =: ("btn btn-primary mx-1" <> active b)) <$> isActive) $ text lbl
+  (e, _) <-
+    elDynAttr' "div" ((\b -> "class" =: ("btn btn-primary align-content-center" <> active b)) <$> isActive) $ text lbl
   return $ () <$ domEvent Click e
   where
-    active isActive' = if isActive' then " active" else " disabled"
+    active isActive' = if isActive' then "" else " disabled"
 
 readInput ::
   (MonadWidget t m, Read a) =>
@@ -122,7 +133,7 @@ readIntSuchThat ident start tester = do
 
 lecteurInt :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> m (Event t (Maybe Int))
 lecteurInt lbl lbl_but isActive ident = el "form" $
-  elAttr "div" ("class" =: "form-group") $ do
+  elAttr "div" ("class" =: "form-group my-2") $ do
     elAttr "label" ("for" =: ident) $ text lbl
     res <- elAttr "div" ("class" =: "input-group") $ do
       m_int <- readInput "inputWord" "0"
@@ -134,7 +145,7 @@ lecteurInt lbl lbl_but isActive ident = el "form" $
 
 lecteurIntSuchThat :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> (Int -> Dynamic t Bool) -> m (Event t (Maybe Int))
 lecteurIntSuchThat lbl lbl_but isActive ident tester = el "form" $
-  elAttr "div" ("class" =: "form-group") $ do
+  elAttr "div" ("class" =: "form-group  my-2") $ do
     elAttr "label" ("for" =: ident) $ text lbl
     res <- elAttr "div" ("class" =: "input-group") $ do
       m_int <- readIntSuchThat "inputWord" "0" tester

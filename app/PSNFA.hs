@@ -6,7 +6,7 @@ import NFA (NFA, renumStates)
 import NFAAccessibility (isTrim, trim)
 import NFADotRepr (nfaToDot)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (kosaraju)
+import NFAOrbit (isIsolatedNFA, isStable, isStableNFA, isStronglyStable, isStronglyStableNFA, kosaraju)
 import NFAStandard (isStandard, makeStandard)
 import ToString (ToString, toString)
 
@@ -50,3 +50,15 @@ renumStatesPStoNFA (PSNFA nfa) = renumStates nfa
 -- | Returns the orbits of a PSNFA as a list of lists of Text
 kosarajuStringPS :: PSNFA symbol -> [[String]]
 kosarajuStringPS (PSNFA nfa) = (toString <$>) <$> kosaraju nfa
+
+-- | Checks whether a PSNFA is isolated
+isIsolatedNFAPS :: PSNFA symbol -> Bool
+isIsolatedNFAPS (PSNFA nfa) = isIsolatedNFA nfa
+
+-- | Checks whether a PSNFA is stable
+isStableNFAPS :: PSNFA symbol -> Bool
+isStableNFAPS (PSNFA nfa) = isStableNFA nfa
+
+-- | Checks whether a PSNFA is strongly stable
+isStronglyStableNFAPS :: (Ord symbol, Show symbol) => PSNFA symbol -> Bool
+isStronglyStableNFAPS (PSNFA nfa) = isStronglyStableNFA nfa

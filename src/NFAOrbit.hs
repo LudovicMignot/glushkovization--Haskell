@@ -427,8 +427,11 @@ orbitalNFA aut o = NFA (Set.singleton Nothing) (Set.map Just outs) (delta aut') 
   where
     ins = ingates aut o
     outs = outgates aut o
-    (first_symb, _) = head $ Map.toList (fromJust $ Map.lookup (fromJust $ Set.lookupMax ins) $ delta_rev aut)
-    aut' = addTransitions (mapState Just $ removeStates aut $ getStates aut `Set.difference` o) first_symb (Set.singleton Nothing) (Set.map Just ins)
+    -- (first_symb, _) = head $ Map.toList $ fromJust $ Map.lookup (fromJust $ Set.lookupMax ins) $ delta_rev aut
+    tmp = Map.toList <$> ((Set.lookupMax ins) >>= \r -> Map.lookup r $ delta_rev aut)
+    aut' = case tmp of
+      Just ((first_symb, _) : _) -> addTransitions (mapState Just $ removeStates aut $ getStates aut `Set.difference` o) first_symb (Set.singleton Nothing) (Set.map Just ins)
+      _ -> mapState Just $ removeStates aut $ getStates aut `Set.difference` o
 
 -- | Removes transitions from a set of states to another set of states by a given symbol
 removeTransFromTo :: (Ord state, Ord symbol) => NFA symbol state -> symbol -> Set state -> Set state -> NFA symbol state
@@ -528,7 +531,8 @@ isExtStable aut o =
     outs = Set.toList $ outgates aut o
     preds_out_o = (\s -> getPreds aut s `Set.difference` o) <$> ins
     succs_out_o = (\s -> getSuccs aut s `Set.difference` o) <$> outs
-    allEqual xs = all (== head xs) (tail xs)
+    allEqual [] = True
+    allEqual (x : xs) = all (== x) xs
 
 -- | Tests whether an orbit is internally stable
 isIntStable :: (Ord state) => NFA symbol state -> Set state -> Bool
