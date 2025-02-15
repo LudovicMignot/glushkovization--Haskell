@@ -53,9 +53,11 @@ library
     , extra
     , filepath
     , free
+    , ghc-experimental
     , graphviz
     , hspec
-    , jsaddle-warp
+    , jsaddle
+    , jsaddle-wasm
     , mtl
     , reflex
     , reflex-dom-core
@@ -72,7 +74,7 @@ executable glushkovization-exe
       Paths_glushkovization
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -no-hs-main -optl-mexec-model=reactor  "-optl-Wl,--export=hs_start"
   build-depends:
       QuickCheck
     , base >=4.7 && <5
@@ -82,15 +84,19 @@ executable glushkovization-exe
     , extra
     , filepath
     , free
+    , ghc-experimental
     , glushkovization
     , graphviz
     , hspec
-    , jsaddle-warp
+    , jsaddle
+    , jsaddle-wasm
     , mtl
     , reflex
     , reflex-dom-core
     , text
   default-language: Haskell2010
+  ghc-options: -no-hs-main "-optl-Wl,--export=hs_start" -optl-mexec-model=reactor -optl-Wl,-lwasi-emulated-getpid -optl-Wl,-lwasi-emulated-process-clocks
+
 
 test-suite glushkovization-test
   type: exitcode-stdio-1.0
@@ -101,7 +107,7 @@ test-suite glushkovization-test
       Paths_glushkovization
   hs-source-dirs:
       test
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       QuickCheck
     , base >=4.7 && <5
@@ -111,10 +117,12 @@ test-suite glushkovization-test
     , extra
     , filepath
     , free
+    , ghc-experimental
     , glushkovization
     , graphviz
     , hspec
-    , jsaddle-warp
+    , jsaddle
+    , jsaddle-wasm
     , mtl
     , reflex
     , reflex-dom-core

@@ -33,8 +33,10 @@ dependencies:
 - free
 - reflex
 - reflex-dom-core
-- jsaddle-warp
 - bytestring
+- jsaddle-wasm
+- jsaddle
+- ghc-experimental
 
 ghc-options:
 - -Wall
@@ -54,10 +56,7 @@ executables:
   glushkovization-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    ghc-options: -no-hs-main -optl-mexec-model=reactor  "-optl-Wl,--export=hs_start"
     dependencies:
     - glushkovization
 
@@ -65,9 +64,5 @@ tests:
   glushkovization-test:
     main:                Spec.hs
     source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
     dependencies:
     - glushkovization

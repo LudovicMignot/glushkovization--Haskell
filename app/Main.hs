@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
 
-module Main (main) where
+module Main where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Either (isLeft)
@@ -10,7 +10,8 @@ import Data.Foldable (forM_)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Text (pack)
-import Language.Javascript.JSaddle.Warp (run)
+-- import Language.Javascript.JSaddle.Warp (run)
+import qualified Language.Javascript.JSaddle.Wasm as JSaddle.Wasm
 import NFA (NFA, generateNFA, getPreds, getStates, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (isTrim, trim)
 import NFAHomogeneity (isHomogeneous)
@@ -23,8 +24,14 @@ import Reflex.Dom.Widget (dyn, el, elAttr, text)
 import ToString (toString)
 import Widget (labelledButton, lecteurInt, lecteurIntSuchThat, lecteurTrans, svgAut)
 
+foreign export javascript "hs_start" hs_start :: IO ()
+
 main :: IO ()
-main = run 3911 $ mainWidgetWithHead header body
+main = error "not necessary"
+
+hs_start :: IO ()
+-- main = run 3911 $ mainWidgetWithHead header body
+hs_start = JSaddle.Wasm.run $ mainWidgetWithHead header body
 
 header :: (DomBuilder t m) => m ()
 header =

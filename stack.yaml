@@ -46,6 +46,9 @@ extra-deps:
 - monoidal-containers-0.6.5.0
 - patch-0.0.8.4
 - jsaddle-warp-0.9.9.2
+- jsaddle-wasm-0.0.1.0
+- ghc-experimental-9.1201.0
+- ghc-internal-9.1201.0
 
 # Override default flag values for project packages and extra-deps
 # flags: {}

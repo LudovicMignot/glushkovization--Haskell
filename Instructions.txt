@@ -1,0 +1,21 @@
+- Add ghc with wasm backend:
+
+curl https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/raw/master/bootstrap.sh | FLAVOUR=9.10 sh
+
+- Load in environment:
+
+source ~/.ghc-wasm/env
+
+- add to cabal file, for executable
+
+ghc-options: -no-hs-main "-optl-Wl,--export=hs_start" -optl-mexec-model=reactor -optl-Wl,-lwasi-emulated-getpid -optl-Wl,-lwasi-emulated-process-clocks
+
+- Compile the project:
+
+wasm32-wasi-cabal build
+
+- copy the wasm file (eg \dist-newstyle\build\wasm32-wasi\ghc-9.10.1.20250207\glushkovization-0.1.0.0\x\glushkovization-exe\build\glushkovization-exe ) in the frontend dir
+
+then
+
+$(wasm32-wasi-ghc --print-libdir)/post-link.mjs -i glushkovization-exe.wasm -o ghc_wasm_jsffi.js

@@ -1,3 +1,4 @@
+-- {-# LANGUAGE JavaScriptFFI         #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
@@ -22,6 +23,7 @@ import Data.Text as Te
     unpack,
   )
 import qualified Data.Text.Lazy as Tel
+import GHC.Wasm.Prim
 import PSNFA (PSNFA, nfaToDotPS)
 import Reflex (Dynamic, constDyn, ffor2, ffor3, tagPromptlyDyn)
 import Reflex.Dom.Core
@@ -30,6 +32,7 @@ import Reflex.Dom.Core
     Reflex (Event),
     domEvent,
     elDynHtml',
+    elDynHtmlAttr',
     (=:),
   )
 import Reflex.Dom.Widget
@@ -49,6 +52,9 @@ import Reflex.Dom.Widget
 import Text.Read (readMaybe)
 import ToString (ToString (toString))
 
+foreign import javascript unsafe "var im = Viz( $1 , { format: \"svg\" }); console.log(im); return im;"
+  vizSVG :: JSString -> JSString
+
 svgAut ::
   ( MonadWidget t m,
     ToString symbol
@@ -56,11 +62,23 @@ svgAut ::
   PSNFA symbol ->
   m ()
 svgAut auto = do
-  let getData handle = do
-        bytes <- BS.hGetContents handle
-        return $ Te.pack $ toString bytes
-  svg <- liftIO $ graphvizWithHandle Dot (parseDotGraph $ Tel.pack $ nfaToDotPS auto :: G.DotGraph String) Svg getData
-  void $ elDynHtml' "div" $ return svg
+  _ <-
+    el "figure" $
+      elDynHtmlAttr' "td" ("class" =: "text-left pr-3") $
+        constDyn $
+          Te.pack $
+            fromJSString $
+              vizSVG $
+                toJSString $
+                  nfaToDotPS auto
+  return ()
+
+-- svgAut auto = do
+--   let getData handle = do
+--         bytes <- BS.hGetContents handle
+--         return $ Te.pack $ toString bytes
+--   svg <- liftIO $ graphvizWithHandle Dot (parseDotGraph $ Tel.pack $ nfaToDotPS auto :: G.DotGraph String) Svg getData
+--   void $ elDynHtml' "div" $ return svg
 
 labelledButton :: (MonadWidget t m) => Text -> Dynamic t Bool -> m (Event t ())
 labelledButton lbl isActive = do
