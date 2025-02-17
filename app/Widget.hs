@@ -5,16 +5,6 @@
 
 module Widget where
 
-import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO (liftIO))
-import qualified Data.ByteString as BS
-import Data.GraphViz.Commands
-  ( GraphvizCommand (Dot),
-    GraphvizOutput (Svg),
-    graphvizWithHandle,
-  )
-import Data.GraphViz.Types (parseDotGraph)
-import Data.GraphViz.Types.Generalised as G (DotGraph)
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Text as Te
@@ -22,7 +12,6 @@ import Data.Text as Te
     pack,
     unpack,
   )
-import qualified Data.Text.Lazy as Tel
 import GHC.Wasm.Prim
 import PSNFA (PSNFA, nfaToDotPS)
 import Reflex (Dynamic, constDyn, ffor2, ffor3, tagPromptlyDyn)
@@ -31,7 +20,6 @@ import Reflex.Dom.Core
     MonadWidget,
     Reflex (Event),
     domEvent,
-    elDynHtml',
     elDynHtmlAttr',
     (=:),
   )
@@ -50,7 +38,7 @@ import Reflex.Dom.Widget
     (.~),
   )
 import Text.Read (readMaybe)
-import ToString (ToString (toString))
+import ToString (ToString)
 
 foreign import javascript unsafe "var im = Viz( $1 , { format: \"svg\" }); console.log(im); return im;"
   vizSVG :: JSString -> JSString

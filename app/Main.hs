@@ -163,22 +163,22 @@ body = do
   footer
   where
     theOrbInfos (Left aut) = do
-      el "table" $ do
-        el "thead" $ do
+      elAttr "table" ("class" =: "table table-striped table-hover p-2") $ do
+        elAttr "thead" ("class" =: "table-dark") $ do
           el "tr" $ do
-            el "th" $ text "Orbit"
-            el "th" $ text "Int Isolated"
-            el "th" $ text "Ext Isolated"
-            el "th" $ text "Stable"
-            el "th" $ text "Strongly stable"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Orbit"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Int Isolated"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Ext Isolated"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Stable"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Strongly stable"
         el "tbody" $ do
           forM_ orbs $ \orbit -> do
             el "tr" $ do
-              el "td" $ text $ pack (toString orbit)
-              el "td" $ text $ pack (toString $ isIntIsolated aut orbit)
-              el "td" $ text $ pack (toString $ isExtIsolated aut orbit)
-              el "td" $ text $ pack (toString $ isStable aut orbit)
-              el "td" $ text $ pack (toString $ isStronglyStable aut orbit)
+              elAttr "td" ("class" =: "text-center") $ text $ pack (toString orbit)
+              elAttr "td" ("class" =: "text-center") $ text $ pack (toString $ isIntIsolated aut orbit)
+              elAttr "td" ("class" =: "text-center") $ text $ pack (toString $ isExtIsolated aut orbit)
+              elAttr "td" ("class" =: "text-center") $ text $ pack (toString $ isStable aut orbit)
+              elAttr "td" ("class" =: "text-center") $ text $ pack (toString $ isStronglyStable aut orbit)
       where
         orbs = Set.fromList <$> kosaraju aut
     theOrbInfos (Right (PSNFA nfa)) = do
