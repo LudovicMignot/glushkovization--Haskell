@@ -6,7 +6,7 @@ import NFA (NFA, renumStates)
 import NFAAccessibility (isTrim, trim)
 import NFADotRepr (nfaToDot)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (isIsolatedNFA, isStable, isStableNFA, isStronglyStable, isStronglyStableNFA, kosaraju)
+import NFAOrbit (isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju)
 import NFAStandard (isStandard, makeStandard)
 import ToString (ToString, toString)
 

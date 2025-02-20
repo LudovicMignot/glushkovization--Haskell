@@ -2,6 +2,8 @@
 
 # ./buid.sh -O4 to run with optimization
 
+source ~/.ghc-wasm/env
+
 set -e
 
 wasm32-wasi-cabal build
