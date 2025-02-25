@@ -21,6 +21,7 @@ import HistoNFA
     prec',
     renumStatesPS',
     stabOrbNFA,
+    stabPS',
     switchFinal',
     switchInit',
     switchTrans',
@@ -66,8 +67,8 @@ body wasm_content = do
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10
 
   elAttr "div" ("class" =: "d-flex flex-row") $ do
-    rec aut_dyn <- foldDyn ($) (newHisto aut) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut (before, old, _after) -> (old : before, new_aut, [])) <$> evt12, orbNFA <$> evt13, stabOrbNFA <$> evt14]
-        ((evt, evt2, evt3), (evt7, evt8, evt9, evt12), (evt10, evt11, evt13, evt14)) <-
+    rec aut_dyn <- foldDyn ($) (newHisto aut) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut (before, old, _after) -> (old : before, new_aut, [])) <$> evt12, orbNFA <$> evt13, stabOrbNFA <$> evt14, stabPS' <$ evt15]
+        ((evt, evt2, evt3), (evt7, evt8, evt9, evt12), (evt10, evt11, evt13, evt14, evt15)) <-
           elAttr "div" (Map.fromList [("class", "accordion w-25"), ("id", "accordion_menu")]) $ do
             res_evt <-
               (,,)
@@ -105,34 +106,36 @@ body wasm_content = do
                           elAttr "h2" ("class" =: "accordion-header") $
                             elAttr "button" (Map.fromList [("class", "accordion-button collapsed"), ("type", "button"), ("data-bs-toggle", "collapse"), ("data-bs-target", "#collapseThree")]) $
                               text "Orbital operations"
-                          elAttr "div" (Map.fromList [("id", "collapseThree"), ("class", "accordion-collapse collapse")]) $
-                            (,,,)
-                              <$> ( lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
-                                      \i ->
-                                        let isExtGate _ (Right _) = False
-                                            isExtGate p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let outs = outgates autom o in p `Set.member` outs && Set.size outs > 1) $ Set.fromList <$> kosaraju autom)
-                                         in (isExtGate i . \(_x, y, _z) -> y) <$> aut_dyn
-                                  )
-                              <*> ( lecteurIntSuchThat "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol" $
-                                      \i ->
-                                        let goodProp _ (Right _) = False
-                                            goodProp p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let ins = ingates autom o in p `Set.member` o && ins /= Set.singleton p) $ Set.fromList <$> kosaraju autom)
-                                         in (goodProp i . \(_x, y, _z) -> y) <$> aut_dyn
-                                  )
-                              <*> ( lecteurIntSuchThat "Orbital NFA" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "orbNFA" $
-                                      \i ->
-                                        let isIntStateWithPred _ (Right _) = False
-                                            isIntStateWithPred p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && not (Set.null (getPreds autom p)) && (any (\o -> let ins = ingates autom o in p `Set.member` o && not (Set.null ins)) $ Set.fromList <$> kosaraju autom)
-                                         in (isIntStateWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
-                                  )
-                              <*> ( lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
-                                      \i ->
-                                        let isInIsolatedOrbWithPred _ (Right _) = False
-                                            isInIsolatedOrbWithPred p (Left autom) =
-                                              let o = Set.unions $ filter (p `Set.member`) $ Set.fromList <$> kosaraju autom
-                                               in isTrim autom && isHomogeneous autom && isStandard autom && isExtIsolated autom o && isIntIsolated autom o && p `Set.member` getStates autom && not (Set.null (getPreds autom p))
-                                         in (isInIsolatedOrbWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
-                                  )
+                          elAttr "div" (Map.fromList [("id", "collapseThree"), ("class", "accordion-collapse collapse")]) $ do
+                            elAttr "div" ("class" =: "d-flex flex-column justify-content-center") $
+                              (,,,,)
+                                <$> ( lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
+                                        \i ->
+                                          let isExtGate _ (Right _) = False
+                                              isExtGate p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let outs = outgates autom o in p `Set.member` outs && Set.size outs > 1) $ Set.fromList <$> kosaraju autom)
+                                           in (isExtGate i . \(_x, y, _z) -> y) <$> aut_dyn
+                                    )
+                                <*> ( lecteurIntSuchThat "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol" $
+                                        \i ->
+                                          let goodProp _ (Right _) = False
+                                              goodProp p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let ins = ingates autom o in p `Set.member` o && ins /= Set.singleton p) $ Set.fromList <$> kosaraju autom)
+                                           in (goodProp i . \(_x, y, _z) -> y) <$> aut_dyn
+                                    )
+                                <*> ( lecteurIntSuchThat "Orbital NFA" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "orbNFA" $
+                                        \i ->
+                                          let isIntStateWithPred _ (Right _) = False
+                                              isIntStateWithPred p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && not (Set.null (getPreds autom p)) && (any (\o -> let ins = ingates autom o in p `Set.member` o && not (Set.null ins)) $ Set.fromList <$> kosaraju autom)
+                                           in (isIntStateWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
+                                    )
+                                <*> ( lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
+                                        \i ->
+                                          let isInIsolatedOrbWithPred _ (Right _) = False
+                                              isInIsolatedOrbWithPred p (Left autom) =
+                                                let o = Set.unions $ filter (p `Set.member`) $ Set.fromList <$> kosaraju autom
+                                                 in isTrim autom && isHomogeneous autom && isStandard autom && isExtIsolated autom o && isIntIsolated autom o && p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+                                           in (isInIsolatedOrbWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
+                                    )
+                                <*> (labelledButton "Stabilize" ((\(_x, y, _z) -> either (\nfa -> isStandard nfa && isHomogeneous nfa && isTrim nfa) (\nfa -> isStandardPS nfa && isHomogeneousPS nfa && isTrimPS nfa) y) <$> aut_dyn))
                     )
             _ <-
               ( elAttr "div" ("class" =: "accordion-item") $ do

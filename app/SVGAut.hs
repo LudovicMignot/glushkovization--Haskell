@@ -22,6 +22,20 @@ import ToString (ToString)
 foreign import javascript unsafe "var im = Viz( $1 , { format: \"svg\" }); console.log(im); return im;"
   vizSVG :: JSString -> JSString
 
+-- foreign import javascript unsafe "\
+--   \var im = Viz($1, { format: 'svg' }); \
+--   \var parser = new DOMParser(); \
+--   \var svgDoc = parser.parseFromString(im, 'image/svg+xml'); \
+--   \var svgElement = svgDoc.documentElement; \
+--   \svgElement.removeAttribute('width'); \
+--   \svgElement.removeAttribute('height'); \
+--   \svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet'); \
+--   \var serializer = new XMLSerializer(); \
+--   \var svgWithoutDimensions = serializer.serializeToString(svgElement); \
+--   \console.log(svgWithoutDimensions); \
+--   \return svgWithoutDimensions;"
+--   vizSVG :: JSString -> JSString
+
 svgAut ::
   ( MonadWidget t m,
     ToString symbol
@@ -30,14 +44,13 @@ svgAut ::
   m ()
 svgAut auto = do
   _ <-
-    el "figure" $
-      elDynHtmlAttr' "div" ("id" =: "svgaut-container") $
-        constDyn $
-          Te.pack $
-            fromJSString $
-              vizSVG $
-                toJSString $
-                  nfaToDotPS auto
+    elDynHtmlAttr' "figure" ("id" =: "svgaut-container") $
+      constDyn $
+        Te.pack $
+          fromJSString $
+            vizSVG $
+              toJSString $
+                nfaToDotPS auto
   return ()
 
 -- svgAut auto = do
