@@ -39,7 +39,7 @@ theContent ::
 theContent aut =
   elAttr
     "div"
-    ("class" =: "d-flex flex-column align-items-center")
+    ("class" =: "d-flex flex-row")
     $ svgAut
     $ toPSNFA aut
   where

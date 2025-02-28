@@ -68,8 +68,8 @@ body wasm_content = do
 
   elAttr "div" ("class" =: "d-flex flex-row") $ do
     rec aut_dyn <- foldDyn ($) (newHisto aut) $ leftmost [trimPS' <$ evt, makeHomogeneousPS' <$ evt2, makeStandardPS' <$ evt3, renumStatesPS' <$ evt4, prec' <$ evt5, next' <$ evt6, switchInit' <$> evt7, switchFinal' <$> evt8, switchTrans' <$> evt9, extIsol' <$> evt10, intIsol' <$> evt11, (\new_aut (before, old, _after) -> (old : before, new_aut, [])) <$> evt12, orbNFA <$> evt13, stabOrbNFA <$> evt14, stabPS' <$ evt15]
-        ((evt, evt2, evt3), (evt7, evt8, evt9, evt12), (evt10, evt11, evt13, evt14, evt15)) <-
-          elAttr "div" (Map.fromList [("class", "accordion w-25"), ("id", "accordion_menu")]) $ do
+        ((evt, evt2, evt3), (evt7, evt8, evt9, evt12), (evt10, evt11, evt13, evt14, evt15)) <- elAttr "div" (Map.fromList [("class", "w-25")]) $
+          elAttr "div" (Map.fromList [("class", "accordion w-100 sticky-top"), ("id", "accordion_menu")]) $ do
             res_evt <-
               (,,)
                 <$> ( elAttr "div" ("class" =: "accordion-item") $ do
@@ -161,7 +161,7 @@ body wasm_content = do
             return res_evt
         (evt4, evt5, evt6) <- elAttr "div" ("class" =: "d-flex flex-column w-75") $ do
           evts <-
-            elAttr "div" (Map.fromList [("role", "group"), ("class", "btn-group")]) $
+            elAttr "div" (Map.fromList [("role", "group"), ("class", "btn-group sticky-top")]) $
               (,,)
                 <$> (labelledButton "renum" $ constDyn True)
                 <*> labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)

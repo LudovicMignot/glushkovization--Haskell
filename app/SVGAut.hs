@@ -27,6 +27,18 @@ foreign import javascript unsafe "var im = Viz( $1 , { format: \"svg\" }); conso
 --   \var parser = new DOMParser(); \
 --   \var svgDoc = parser.parseFromString(im, 'image/svg+xml'); \
 --   \var svgElement = svgDoc.documentElement; \
+--   \svgElement.setAttribute('flex-grow', '1'); \
+--   \var serializer = new XMLSerializer(); \
+--   \var svgWithoutDimensions = serializer.serializeToString(svgElement); \
+--   \console.log(svgWithoutDimensions); \
+--   \return svgWithoutDimensions;"
+--   vizSVG :: JSString -> JSString
+
+-- foreign import javascript unsafe "\
+--   \var im = Viz($1, { format: 'svg' }); \
+--   \var parser = new DOMParser(); \
+--   \var svgDoc = parser.parseFromString(im, 'image/svg+xml'); \
+--   \var svgElement = svgDoc.documentElement; \
 --   \svgElement.removeAttribute('width'); \
 --   \svgElement.removeAttribute('height'); \
 --   \svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet'); \
@@ -44,7 +56,7 @@ svgAut ::
   m ()
 svgAut auto = do
   _ <-
-    elDynHtmlAttr' "figure" ("id" =: "svgaut-container") $
+    elDynHtmlAttr' "figure" ("id" =: "svgaut-container" <> "class" =: "m-auto") $
       constDyn $
         Te.pack $
           fromJSString $
