@@ -5,6 +5,7 @@
 module Widget where
 
 import Control.Monad (void)
+import Data.Char (isAlphaNum)
 import Data.List (intercalate)
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
@@ -41,17 +42,31 @@ import Text.Read (readMaybe)
 
 type Parser = Parsec Void String
 
+-- Parser pour les caractères
+character :: Parser Char
+character = satisfy isAlphaNum
+
 -- Parser pour les entiers
 integer :: Parser Int
 integer = read <$> (optional separator *> some digitChar <* optional separator)
+
+transition :: Parser (Int, Char, Int)
+transition = optional separator *> (between (char '(') (char ')') $ (,,) <$> integer <* separator <*> character <* separator <*> integer) <* optional separator
 
 -- Parser pour les caractères séparateurs (espaces, tabulations, virgules, points-virgules)
 separator :: Parser ()
 separator = void $ many (oneOf [',', ';'] <|> spaceChar)
 
+-- Parser pour les caractères séparateurs (espaces, tabulations, virgules, points-virgules)
+separator1 :: Parser ()
+separator1 = void $ some (oneOf [',', ';'] <|> spaceChar)
+
 -- Parser pour une liste d'entiers séparés par des caractères non entiers
 integerList :: Parser [Int]
 integerList = integer `sepBy` separator <* eof
+
+transitionList :: Parser [(Int, Char, Int)]
+transitionList = transition `sepBy` separator <* eof
 
 -- Fonction pour tester le parser
 parseIntegerList :: String -> Maybe [Int]
@@ -60,6 +75,43 @@ parseIntegerList = eitherToMaybe . parse integerList ""
     eitherToMaybe (Left _) = Nothing
     eitherToMaybe (Right []) = Nothing
     eitherToMaybe (Right a) = Just a
+
+parseTransitionList :: String -> Maybe [(Int, Char, Int)]
+parseTransitionList = eitherToMaybe . parse transitionList ""
+  where
+    eitherToMaybe (Left _) = Nothing
+    eitherToMaybe (Right []) = Nothing
+    eitherToMaybe (Right a) = Just a
+
+readTransList ::
+  (MonadWidget t m) =>
+  Text ->
+  Text ->
+  m (Dynamic t (Maybe [(Int, Char, Int)]))
+readTransList ident start = do
+  let errorState =
+        Map.fromList [("class", "form-control is-invalid"), ("id", ident)]
+      validState =
+        Map.fromList [("class", "form-control is-valid"), ("id", ident)]
+  rec n <-
+        textInput $
+          def
+            & textInputConfig_inputType
+            .~ "text"
+            & textInputConfig_initialValue
+            .~ start
+            & textInputConfig_attributes
+            .~ attrs
+
+      let result = parseTransitionList . Te.unpack <$> _textInput_value n
+          attrs =
+            ( \m_int ->
+                case m_int of
+                  Nothing -> errorState
+                  Just _ -> validState
+            )
+              <$> result
+  return result
 
 readIntsSuchThat ::
   (MonadWidget t m) =>
@@ -191,14 +243,14 @@ lecteurIntsSuchThat lbl lbl_but isActive ident tester = el "form" $
       text "Enter a list integers, made of the symbols in [0 .. 9]."
     return res
 
-lecteurTrans :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> m (Event t (Maybe (Int, Char, Int)))
+lecteurTrans :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> m (Event t (Maybe [(Int, Char, Int)]))
 lecteurTrans lbl lbl_but isActive ident = el "form" $
   elAttr "div" ("class" =: "form-group") $ do
     elAttr "label" ("for" =: ident) $ text lbl
     res <- elAttr "div" ("class" =: "input-group") $ do
-      m_int <- readInput "inputWord" "(0, 'a', 1)"
+      m_int <- readTransList "inputTrans" "(0, a, 1) (1, b, 2)"
       evt <- labelledButton lbl_but $ ffor2 isActive m_int (\b m_int_val -> b && isJust m_int_val)
       return $ tagPromptlyDyn m_int evt
     elAttr "small" ("class" =: "form-text text-muted") $
-      text "Enter a transition, a triple (p, l, q) where p and q are made of the symbols in [0 .. 9] and l a quoted (') character."
+      text "Enter a list of transitions, triples (p, l, q) where p and q are made of the symbols in [0 .. 9] and l a character."
     return res

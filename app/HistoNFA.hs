@@ -80,6 +80,10 @@ switchTrans' :: Maybe (Int, Char, Int) -> Histo -> Histo
 switchTrans' (Just t) (before, Left aut, _after) = (Left aut : before, Left $ switchTrans t aut, [])
 switchTrans' _m_int au = au
 
+switchTranss' :: Maybe [(Int, Char, Int)] -> Histo -> Histo
+switchTranss' (Just ts) (before, Left aut, _after) = (Left aut : before, Left $ foldr switchTrans aut ts, [])
+switchTranss' _ histo = histo
+
 -- | Trims the current automaton of an histo automaton
 trimPS' :: Histo -> Histo
 trimPS' (before, Left aut, _after) = (Left aut : before, Left $ trim aut, [])
