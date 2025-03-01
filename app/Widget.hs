@@ -104,16 +104,7 @@ readIntSuchThat ident start tester = do
   return result
 
 lecteurInt :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> m (Event t (Maybe Int))
-lecteurInt lbl lbl_but isActive ident = el "form" $
-  elAttr "div" ("class" =: "form-group my-2") $ do
-    elAttr "label" ("for" =: ident) $ text lbl
-    res <- elAttr "div" ("class" =: "input-group") $ do
-      m_int <- readInput "inputWord" "0"
-      evt <- labelledButton lbl_but $ ffor2 isActive m_int (\b m_int_val -> b && isJust m_int_val)
-      return $ tagPromptlyDyn m_int evt
-    elAttr "small" ("class" =: "form-text text-muted") $
-      text "Enter an integer, made of the symbols in [0 .. 9]."
-    return res
+lecteurInt lbl lbl_but isActive ident = lecteurIntSuchThat lbl lbl_but isActive ident (constDyn . const True)
 
 lecteurIntSuchThat :: (MonadWidget t m) => Text -> Text -> Dynamic t Bool -> Text -> (Int -> Dynamic t Bool) -> m (Event t (Maybe Int))
 lecteurIntSuchThat lbl lbl_but isActive ident tester = el "form" $
