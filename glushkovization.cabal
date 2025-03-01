@@ -97,6 +97,7 @@ executable glushkovization-exe
     , reflex
     , reflex-dom-core
     , text
+    , megaparsec
   default-language: Haskell2010
   ghc-options: -no-hs-main "-optl-Wl,--export=hs_start" -optl-mexec-model=reactor -optl-Wl,-lwasi-emulated-getpid -optl-Wl,-lwasi-emulated-process-clocks
 

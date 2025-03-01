@@ -37,6 +37,7 @@ dependencies:
 - jsaddle-wasm
 - jsaddle
 - ghc-experimental
+- megaparsec
 
 ghc-options:
 - -Wall

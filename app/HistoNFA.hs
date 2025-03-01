@@ -58,11 +58,21 @@ switchInit' :: Maybe Int -> Histo -> Histo
 switchInit' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchInit i aut, [])
 switchInit' _m_int au = au
 
+-- | Switch the "initiality" of a list of states if it is not Nothing in the current automaton of an histo automaton
+switchInits' :: Maybe [Int] -> Histo -> Histo
+switchInits' (Just is) (before, Left aut, _after) = (Left aut : before, Left $ foldr switchInit aut is, [])
+switchInits' _ histo = histo
+
 -- | Switch the "finality" of a state i if it is not Nothing in the current automaton of an histo automaton
 -- if the automaton is an NFA. Otherwise it does nothing.
 switchFinal' :: Maybe Int -> Histo -> Histo
 switchFinal' (Just i) (before, Left aut, _after) = (Left aut : before, Left $ switchFinal i aut, [])
 switchFinal' _m_int au = au
+
+-- | Switch the "finality" of a list of states if it is not Nothing in the current automaton of an histo automaton
+switchFinals' :: Maybe [Int] -> Histo -> Histo
+switchFinals' (Just is) (before, Left aut, _after) = (Left aut : before, Left $ foldr switchFinal aut is, [])
+switchFinals' _ histo = histo
 
 -- | Switch the existance of a transition (i, c, j) if it is not Nothing in the current automaton of an histo automaton
 -- if the automaton is an NFA. Otherwise it does nothing.
