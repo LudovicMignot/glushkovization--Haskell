@@ -352,12 +352,12 @@ stabilizeOrbit aut o = orbitalSubstitution aut o aut_o_stab_res
     aut_o' =
       removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
     aut_o_stab =
-      stabilizationNFA aut_o'
+      strongStabilizationNFA aut_o'
     aut_o_stab_res = addTransitions aut_o_stab first_symb (final aut_o_stab) (F.foldMap (getSuccs aut_o_stab) $ initial aut_o_stab)
 
--- | Stabilizes an homogeneous and standard NFA
-stabilizationNFA :: (Ord state, Ord symbol) => NFA symbol state -> NFA symbol (FreeEither state)
-stabilizationNFA nfa = aux nfa' orbits
+-- | Strongly stabilizes an homogeneous and standard NFA
+strongStabilizationNFA :: (Ord state, Ord symbol) => NFA symbol state -> NFA symbol (FreeEither state)
+strongStabilizationNFA nfa = aux nfa' orbits
   where
     nfa' = orbitalIsolationViaSuccOutgates nfa
     orbits = Set.fromList <$> kosaraju nfa'
@@ -372,7 +372,7 @@ stabilizationNFA nfa = aux nfa' orbits
         aut_o' =
           removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
         aut_o_stab =
-          stabilizationNFA aut_o'
+          strongStabilizationNFA aut_o'
         aut_o_stab_res = addTransitions aut_o_stab first_symb (final aut_o_stab) (F.foldMap (getSuccs aut_o_stab) $ initial aut_o_stab)
         aut' =
           mapState

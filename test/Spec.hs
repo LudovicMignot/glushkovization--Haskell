@@ -11,7 +11,7 @@ import NFAAccessibility
   )
 import NFABoolComb (symDiff)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet,   orbitalIsolationViaSuccOutgates, outgates, stabilizationNFA)
+import NFAOrbit (externalIsolation, internalIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationViaSuccOutgates, outgates, strongStabilizationNFA)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -101,35 +101,35 @@ main = hspec $ parallel $ do
       property $
         forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
-            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = strongStabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isTrim nfa'
 
     it "produces an homogeneous automaton" $
       property $
         forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
-            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = strongStabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isHomogeneous nfa'
 
     it "produces a standard automaton" $
       property $
         forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
-            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = strongStabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isStandard nfa'
 
     it "produces a strongly stable automaton" $
       property $
         forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
-            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = strongStabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null (getStates nfa') || isStronglyStableNFA nfa'
 
     it "preserves the language" $
       property $
         forAll (makeGenNFA ['a' .. 'c'] [1 .. 15 :: Int] 3 5 20) $
           \nfa ->
-            let nfa' = stabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
+            let nfa' = strongStabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null $ getUsefulStates $ symDiff nfa nfa'
 
   describe "externalIsolation" $ do

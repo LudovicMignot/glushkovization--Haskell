@@ -25,7 +25,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, ingates, internalIsolation, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, stabilizationNFA)
+import NFAOrbit (externalIsolation, ingates, internalIsolation, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, strongStabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -244,7 +244,7 @@ runStabilization = do
   putStr "Orbits and gates (aut): "
   putStrLn $ toString orbits_gates
   hFlush stdout
-  let aut' = stabilizationNFA aut
+  let aut' = strongStabilizationNFA aut
   putStr "Nb states of aut: "
   print $ F.length $ getStates aut
   putStr "Nb states of aut': "
