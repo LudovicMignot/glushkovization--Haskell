@@ -112,7 +112,7 @@ body wasm_content = do
                           elAttr "div" (Map.fromList [("id", "collapseThree"), ("class", "accordion-collapse collapse")]) $ do
                             elAttr "div" ("class" =: "d-flex flex-column justify-content-center") $
                               (,,,,)
-                                <$> ( lecteurIntSuchThat "External isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
+                                <$> ( lecteurIntSuchThat "Outgate isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "extIsol" $
                                         \i ->
                                           let isExtGate _ (Right _) = False
                                               isExtGate p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let outs = outgates autom o in p `Set.member` outs && Set.size outs > 1) $ Set.fromList <$> kosaraju autom)

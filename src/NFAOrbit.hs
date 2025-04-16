@@ -108,9 +108,9 @@ ingates nfa orbit = Set.filter (\p -> isInitial nfa p || F.any (not . (`Set.memb
 
 -- | For a given set O of states and a given state g, adds a clone of O where g is the only state which is final or linked with the outside of O.
 -- The original g is not final nor linked with the "outside" of O anymore.
--- If O is an orbit and g a state of O, performs the external isolation of O.
+-- If O is an orbit and g a state of O, performs the outgate isolation of O.
 -- The new added state "Right" ones, the "old" ones "Left" ones.
-externalIsolation ::
+outgateIsolation ::
   (Ord state, Ord symbol) =>
   -- | The NFA A
   NFA symbol state ->
@@ -118,9 +118,9 @@ externalIsolation ::
   Set state ->
   -- | A state g
   state ->
-  -- | The (possible) external isolation of g
+  -- | The (possible) outgate isolation of g
   NFA symbol (Either state state)
-externalIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap delta')
+outgateIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap delta')
   where
     toRight = either Right Right
     orbit_l = Set.map Left orbit
@@ -224,11 +224,11 @@ ingateIsolation nfa orbit g =
 
 -- * Orbital isolation
 
--- | Tests whether an orbit is externally isolated
+-- | Tests whether an orbit is outgate isolated
 isExtIsolated :: (Ord state) => NFA symbol state -> Set state -> Bool
 isExtIsolated nfa orbit = F.length (outgates nfa orbit) <= 1
 
--- | Tests whether an NFA is externally isolated
+-- | Tests whether an NFA is outgate isolated
 isNFAExtIsolated :: (Ord state) => NFA symbol state -> Bool
 isNFAExtIsolated nfa = F.all (isExtIsolated nfa) $ kosarajuSet nfa
 
@@ -258,7 +258,7 @@ orbitalIsolationViaSuccOutgates nfa = aux nfa' orbits
       | Set.null outs || Set.null ins = aux (removeStates aut o) os
       | F.length o == 1 = aux aut os
       | isExtIso && (isIntIso && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins)) = aux aut os
-      | not isExtIso = aux (mapState (Free . MonoEither) $ externalIsolation aut o g) (Set.map (Free . MonoEither . Right) o : (Set.map (Free . MonoEither . Left) <$> orbs))
+      | not isExtIso = aux (mapState (Free . MonoEither) $ outgateIsolation aut o g) (Set.map (Free . MonoEither . Right) o : (Set.map (Free . MonoEither . Left) <$> orbs))
       | otherwise = aux aut' ((Set.map (Free . MonoEither) <$> new_orbs) <> (Set.map (Free . MonoEither . Left) <$> os))
       where
         outs = outgates aut o

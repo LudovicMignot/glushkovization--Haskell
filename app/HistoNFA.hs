@@ -15,7 +15,7 @@ module HistoNFA where
 import qualified Data.Set as Set
 import NFA (NFA, getStates, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (trim)
-import NFAOrbit (externalIsolation, ingateIsolation, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit, strongStabilizationNFA)
+import NFAOrbit (ingateIsolation, kosarajuSet, orbitalNFA, outgateIsolation, outgates, stabilizeOrbit, strongStabilizationNFA)
 import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 
 -- | An Histo automaton is composed of the previous automata, the current automaton and the next automata
@@ -46,11 +46,11 @@ orbNFA (Just i) (before, Left aut, _after) = (Left aut : before, Right $ PSNFA $
     orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
 orbNFA _m_int au = au
 
--- | Externally isolates the orbit containing a state i if it is not Nothing in the current automaton of an histo automaton
+-- | Outgate isolates the orbit containing a state i if it is not Nothing in the current automaton of an histo automaton
 -- if the automaton is an NFA. Otherwise it does nothing.
 extIsol' :: Maybe Int -> Histo -> Histo
 extIsol' (Just i) (before, Left aut, _after)
-  | i `Set.member` (getStates aut `Set.intersection` outgates aut orbit_i) = (Left aut : before, Right $ PSNFA $ externalIsolation aut orbit_i i, [])
+  | i `Set.member` (getStates aut `Set.intersection` outgates aut orbit_i) = (Left aut : before, Right $ PSNFA $ outgateIsolation aut orbit_i i, [])
   where
     orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
 extIsol' _m_int au = au

@@ -11,7 +11,7 @@ import NFAAccessibility
   )
 import NFABoolComb (symDiff)
 import NFAHomogeneity (isHomogeneous, makeHomogeneous)
-import NFAOrbit (externalIsolation, ingateIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationViaSuccOutgates, outgates, strongStabilizationNFA)
+import NFAOrbit (ingateIsolation, isIsolatedNFA, isStronglyStableNFA, kosarajuSet, orbitalIsolationViaSuccOutgates, outgateIsolation, outgates, strongStabilizationNFA)
 import NFAStandard (isStandard, makeStandard)
 import Test.Hspec (describe, hspec, it, parallel)
 import Test.QuickCheck
@@ -90,7 +90,7 @@ main = hspec $ parallel $ do
         forAll (resize 20 genOrbitsAndState) $
           \(nfa, o, g) -> let nfa' = fst $ ingateIsolation (trim nfa) o g in isTrim nfa'
 
-  describe "externalIsolation" $ do
+  describe "outgateIsolation" $ do
     it "preserves the utility" $
       property $
         forAll (resize 20 genOrbitsAndState) $
@@ -132,11 +132,11 @@ main = hspec $ parallel $ do
             let nfa' = strongStabilizationNFA . trim . makeStandard . makeHomogeneous $ (nfa :: NFA Char Int)
              in Set.null $ getUsefulStates $ symDiff nfa nfa'
 
-  describe "externalIsolation" $ do
+  describe "outgateIsolation" $ do
     it "preserves the language" $
       property $
         forAll (resize 20 genOrbitsAndGates) $
-          \(nfa, o, g) -> let nfa' = externalIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
+          \(nfa, o, g) -> let nfa' = outgateIsolation nfa o g in Set.null $ getUsefulStates $ symDiff (nfa :: NFA Char Int) nfa'
 
   describe "ingateIsolation" $ do
     it "preserves the language" $

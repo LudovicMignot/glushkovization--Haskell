@@ -25,7 +25,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, ingateIsolation, ingates, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, strongStabilizationNFA)
+import NFAOrbit (ingateIsolation, ingates, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgateIsolation, outgates, strongStabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -136,8 +136,8 @@ runComplete = do
   _ <- toPngInImgDir "test_complete2" $ complete aut
   print "Done"
 
-runExternalIsolation :: IO ()
-runExternalIsolation = do
+runoutgateIsolation :: IO ()
+runoutgateIsolation = do
   aut <- generateNFA ['a' .. 'c'] [1 .. 15 :: Int] 2 5 25
   _ <- toPngInImgDir "test_extIso1" aut
   let orbits = kosarajuSet aut
@@ -150,7 +150,7 @@ runExternalIsolation = do
       case m_g of
         Nothing -> print "No gate"
         Just g -> do
-          let aut' = externalIsolation aut o g
+          let aut' = outgateIsolation aut o g
           print g
           _ <- toPngInImgDir "test_extIso2" aut'
           print "Done"
