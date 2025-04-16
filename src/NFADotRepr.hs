@@ -1,3 +1,23 @@
+-- |
+-- Module      : NFADotRepr
+-- Description : Provides functions to convert NFAs (Non-deterministic Finite Automata)
+--               into DOT representations and export them as visualizations.
+--
+-- This module defines utilities for representing NFAs in the DOT language,
+-- which can be used to generate graphical representations of automata.
+-- It includes functions to:
+--
+-- * Convert an NFA into a DOT string representation.
+-- * Generate a `DotGraph` representation for use with the Graphviz library.
+-- * Export NFAs as PNG images, with options to specify file names and directories.
+--
+-- The module relies on the Graphviz library for DOT generation and rendering,
+-- and provides customization options such as node shapes, colors, and labels
+-- based on the properties of the NFA (e.g., initial states, final states, and transitions).
+--
+-- Additionally, the module supports organizing states into subgraphs based on
+-- their orbits, as determined by Kosaraju's algorithm, and highlights specific
+-- states (e.g., ingates, outgates) with distinct colors.
 module NFADotRepr where
 
 import qualified Data.Foldable as F (foldl')
