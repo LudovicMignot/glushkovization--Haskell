@@ -4,9 +4,20 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 
+-- |
+-- Module      : NFAOrbit
+-- Description : Provides functions for computing orbits, isolating states, and stabilizing NFAs
+--
+-- This module defines a set of functions and utilities for working with
+-- Non-deterministic Finite Automata (NFAs). It includes algorithms for:
+--
+-- * Computing the orbits of an NFA using Kosaraju's algorithm.
+-- * Identifying and isolating ingates and outgates of orbits.
+-- * Substituting orbits with orbital automata.
+-- * Stabilizing NFAs and testing their stability.
 module NFAOrbit where
 
-import Control.Monad (join, unless)
+import Control.Monad (unless)
 import Control.Monad.Extra (concatMapM)
 import Control.Monad.Free (Free (Free, Pure))
 import Control.Monad.State.Lazy
@@ -18,17 +29,13 @@ import Control.Monad.State.Lazy
 import Data.Bifunctor (first, second)
 import qualified Data.Foldable as F
 import Data.Function ((&))
-import Data.Functor.Classes (Eq1 (..), Ord1 (liftCompare), Show1 (liftShowsPrec))
 import qualified Data.Map.Lazy as Map
 import Data.Maybe (fromJust)
 import Data.Set (Set)
 import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, findMax, foldl', fromList, insert, intersection, isSubsetOf, lookupMax, map, member, null, singleton, toList, union)
-import MonoEither (FreeEither, MonoEither (MonoEither), eitherToFree)
+import MonoEither (FreeEither, MonoEither (MonoEither))
 import NFA (NFA (NFA, delta_rev, final), addSuccsInMap, addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, reverseTransitionMap, transformsSuccs)
-import NFAAccessibility (getAccessibleStatesFromVia, isTrim, trim)
-import NFAHomogeneity (isHomogeneous)
-import NFAStandard (isStandard)
-import ToString (ToString, toString)
+import NFAAccessibility (getAccessibleStatesFromVia)
 
 -- * Computation of the orbits
 
@@ -233,114 +240,6 @@ isIntIsolated nfa orbit = F.length (ingates nfa orbit) <= 1
 isIsolatedNFA :: (Ord state) => NFA symbol state -> Bool
 isIsolatedNFA nfa = F.all (\o -> isExtIsolated nfa o && isIntIsolated nfa o) $ kosarajuSet nfa
 
--- -- | Performs the orbital isolation of an NFA A.
--- orbitalIsolationNaiveStep ::
---   (Ord state, Ord symbol) =>
---   -- | The NFA A
---   NFA symbol state ->
---   -- | The resulting automaton
---   NFA symbol (FreeEither state)
--- orbitalIsolationNaiveStep nfa =
---   case F.find
---     ( not . isExtIsolated nfa
---     )
---     (kosarajuSet nfa) of
---     Just o -> case Set.lookupMax $ outgates nfa o of
---       Just g -> mapState eitherToFree $ externalIsolation nfa o g
---       Nothing -> mapState Pure $ removeStates nfa o
---     Nothing -> case F.find
---       ( not . isIntIsolated nfa
---       )
---       (kosarajuSet nfa) of
---       Just o -> case Set.lookupMax $ outgates nfa o of
---         Just g -> case Set.lookupMax $ getSuccs nfa g of
---           Just g' -> mapState eitherToFree $ fst $ internalIsolation nfa o g'
---           Nothing -> mapState Pure $ removeStates nfa o
---         Nothing -> mapState Pure $ removeStates nfa o
---       Nothing -> mapState Pure nfa
-
--- -- | Performs the orbital isolation of an NFA A.
--- orbitalIsolationNaive ::
---   (Ord state, Ord symbol) =>
---   -- | The NFA A
---   NFA symbol state ->
---   -- | The resulting automaton
---   NFA symbol (FreeEither state)
--- orbitalIsolationNaive nfa =
---   case F.find
---     ( not . isExtIsolated nfa
---     )
---     (kosarajuSet nfa) of
---     Just o -> case Set.lookupMax $ outgates nfa o of
---       Just g -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ externalIsolation nfa o g
---       Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
---     Nothing -> case F.find
---       ( not . isIntIsolated nfa
---       )
---       (kosarajuSet nfa) of
---       Just o -> case Set.lookupMax $ outgates nfa o of
---         Just g -> case Set.lookupMax $ getSuccs nfa g of
---           Just g' -> mapState join $ orbitalIsolationNaive $ mapState eitherToFree $ fst $ internalIsolation nfa o g'
---           Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
---         Nothing -> mapState join $ orbitalIsolationNaive $ mapState Pure $ removeStates nfa o
---       Nothing -> mapState Pure nfa
-
--- -- | Externally isolates the orbit o of an NFA
--- orbitExternalIsolation ::
---   (Ord state, Ord symbol) =>
---   -- | The NFA A
---   NFA symbol (FreeEither state) ->
---   -- | The orbit o
---   Set (FreeEither state) ->
---   -- | The resulting automaton
---   NFA symbol (FreeEither state)
--- orbitExternalIsolation nfa o = aux nfa o $ Set.toList $ outgates nfa o
---   where
---     aux aut _ [] = aut
---     aux aut orb (g : gs) = aux (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) $ fmap (Free . MonoEither . Left) gs
-
--- -- | Externally isolates the orbits of an NFA
--- nfaExternalIsolation ::
---   (Ord state, Ord symbol) =>
---   -- | The NFA A
---   NFA symbol state ->
---   -- | The resulting automaton
---   NFA symbol (FreeEither state)
--- nfaExternalIsolation nfa = aux nfa' orbits
---   where
---     nfa' = mapState Pure nfa
---     orbits = Set.fromList <$> kosaraju nfa'
---     aux aut [] = aut
---     aux aut (o : os)
---       | isExtIsolated aut o = aux aut os
---       | otherwise = aux' aut o (Set.toList $ outgates aut o) os
---     aux' aut _ [] os = aux aut os
---     aux' aut _ [_] os = aux aut os
---     aux' aut orb (g : gs) os = aux' (mapState (Free . MonoEither) $ externalIsolation aut orb g) (Set.map (Free . MonoEither . Left) orb) (Free . MonoEither . Left <$> gs) (Set.map (Free . MonoEither . Left) <$> os)
-
--- -- | Internally isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
--- -- Removes orbits with no outgates.
--- -- New orbits can be created, and will not be necessarily internally isolated
--- nfaInternalIsolationViaSuccOutgates ::
---   (Ord state, Ord symbol) =>
---   -- | The NFA A
---   NFA symbol state ->
---   -- | The resulting automaton
---   NFA symbol (FreeEither state)
--- nfaInternalIsolationViaSuccOutgates nfa = aux nfa' orbits
---   where
---     nfa' = mapState Pure nfa
---     orbits = Set.fromList <$> kosaraju nfa'
---     aux aut [] = aut
---     aux aut (o : os)
---       | isIntIsolated aut o && not (F.foldMap (getSuccs aut) outs `Set.disjoint` ins) = aux aut os
---       | Set.null outs = aux (removeStates aut o) os
---       | otherwise = aux (mapState (Free . MonoEither) $ fst $ internalIsolation aut o succ_out) (Set.map (Free . MonoEither . Left) <$> os)
---       where
---         outs = outgates aut o
---         ins = ingates aut o
---         succ_out = Set.findMax $ getSuccs aut $ Set.findMax outs
-
 -- | Isolates the orbits of an NFA, using a successor of an outgate to become an ingate.
 -- Removes orbits with no outgates or no ingates.
 -- May create new orbits, that will be isolate too
@@ -415,8 +314,7 @@ orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'' (re
           others_l
         -- for any final state of A', we add the successors of the outgates of O
         & flip
-          ( Set.foldl' (flip (\fin' -> flip (Set.foldl' (flip (\(state, symbol) -> flip addTransitionInMap (Right fin', symbol, Left state)))) succs_out_o))
-          )
+          (Set.foldl' (flip (\fin' -> flip (Set.foldl' (flip (\(state, symbol) -> flip addTransitionInMap (Right fin', symbol, Left state)))) succs_out_o)))
           final'
 
 -- * Stabilization functions
@@ -472,45 +370,11 @@ stabilizationNFA nfa = aux nfa' orbits
         aut_o = orbitalNFA aut o
         (first_symb, _) = head $ Map.toList (fromJust $ Map.lookup (fromJust $ Set.lookupMax $ initial aut_o) $ delta aut_o)
         aut_o' =
-          -- -- ici ajout trace
-          -- if F.length (kosaraju aut_o) /= 2
-          --   then error $ "Not 2 orbits: " -- ++ show aut_o
-          --   else
           removeTransFromTo aut_o first_symb (final aut_o) (F.foldMap (getSuccs aut_o) $ initial aut_o)
         aut_o_stab =
-          -- ici ajout trim
           stabilizationNFA aut_o'
-        -- trim $ stabilizationNFA aut_o'
         aut_o_stab_res = addTransitions aut_o_stab first_symb (final aut_o_stab) (F.foldMap (getSuccs aut_o_stab) $ initial aut_o_stab)
         aut' =
-          -- -- ici ajout trace
-          -- if not (isHomogeneous aut_o_stab)
-          --   then error $ "pas homogene après stabilization: " -- ++ show aut_o
-          --   else
-          --     if not (isStandard aut_o_stab)
-          --       then error $ "pas standard après stabilization: " -- ++ show aut_o
-          --       else
-          --         -- if not (isTrim aut_o_stab_res)
-          --         --   then error $ "pas trim après stabilization: " -- ++ show aut_o
-          --         --   else
-          --         if F.length (kosaraju aut_o_stab_res) /= 2
-          --           then error $ "Not 2 orbits: " -- ++ show aut_o
-          --           else
-          --             if not (isTrim aut_o_stab_res)
-          --               then error $ "pas trim après ajout: " -- ++ show aut_o ++ show aut_o_stab_res
-          --               else
-          --                 if not (isStableNFA aut_o_stab)
-          --                   then error $ "Not stable aut_o_stab: " -- ++ show aut_o ++ show aut_o_stab_res
-          --                   else
-          --                     if not (isStronglyStableNFA aut_o_stab)
-          --                       then error $ "Not strongly stable aut_o_stab: " -- ++ show aut_o ++ show aut_o_stab_res
-          --                       else
-          --                         if not (isStableNFA aut_o_stab_res)
-          --                           then error $ "Not stable aut_o_stab_res: " -- ++ show aut_o ++ show aut_o_stab_res
-          --                           else
-          --                             if not (isStronglyStableNFA aut_o_stab_res)
-          --                               then error $ "Not strongly stable: " -- ++ show aut_o ++ show aut_o_stab_res
-          --                               else
           mapState
             ( \case
                 Left s -> Free $ MonoEither $ Left s
