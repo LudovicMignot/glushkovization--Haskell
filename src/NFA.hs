@@ -1,6 +1,38 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 
+-- |
+-- Module      : NFA
+-- Description : A module for representing and manipulating Non-deterministic Finite Automata (NFA).
+-- Copyright   : (c) Your Name, 2023
+-- License     : MIT
+-- Maintainer  : your.email@example.com
+-- Stability   : experimental
+-- Portability : portable
+--
+-- This module provides a data type for representing Non-deterministic Finite Automata (NFA) and a variety of functions for manipulating and querying them.
+-- It includes functionality for modifying NFAs, generating random NFAs, mapping over states, querying properties, simulating the automaton, and reversing transitions.
+--
+-- == The NFA type
+-- The core type of this module is 'NFA', which represents a Non-deterministic Finite Automaton. It is parameterized over the type of states and the type of symbols in the alphabet.
+--
+-- == Modification functions
+-- Functions for modifying the structure of an NFA, such as switching initial or final states, adding or removing transitions, and renumbering states.
+--
+-- == Arbitrary Instance
+-- Functions for generating random NFAs for testing purposes, with or without constraints.
+--
+-- == Functorial fmap-like
+-- A function for mapping over the states of an NFA.
+--
+-- == Requests
+-- Functions for querying properties of an NFA, such as its set of states, alphabet, transitions, successors, predecessors, and whether a state is initial or final.
+--
+-- == Actions of a symbol / a word over a state / set of states
+-- Functions for simulating the behavior of the NFA, such as determining the states reached by a symbol or word, and checking if the NFA recognizes a given word.
+--
+-- == Reversal
+-- Functions for reversing the transitions of an NFA, effectively reversing the automaton.
 module NFA where
 
 import qualified Data.Foldable as F (Foldable (foldMap'), fold, foldMap, foldl')
