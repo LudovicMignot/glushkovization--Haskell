@@ -1,3 +1,15 @@
+-- |
+-- Module      : HistoNFA
+-- Description : Provides functionality for working with historical Non-deterministic Finite Automata (HistoNFA).
+--
+-- This module defines and manipulates historical for Non-deterministic Finite Automata (HistoNFA),
+-- a specialized data structure used to represent NFAs with additional historical information
+-- about modifications. The historical data allows for advanced analysis and processing
+-- of automata, such as tracking the sequence of transformations.
+--
+-- The core type, `Histo`, is central to this module and encapsulates the historical
+-- information associated with the automaton. The module provides tools to construct,
+-- manipulate, and analyze these automata effectively.
 module HistoNFA where
 
 import qualified Data.Set as Set
