@@ -2,11 +2,27 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 
+-- | Module      : MonoEither
+-- | Description : Provides a newtype wrapper for 'Either' with identical types on both sides,
+-- |               along with instances for common typeclasses and utility functions.
+-- |
+-- | This module defines the 'MonoEither' type, which is a wrapper around 'Either' where both
+-- | the 'Left' and 'Right' constructors contain values of the same type. It provides instances
+-- | for 'Show1', 'Eq1', 'Ord1', and 'Functor', enabling advanced functionality for working
+-- | with this type. Additionally, it defines a type alias 'FreeEither' for the free monad
+-- | over 'MonoEither', and utility functions for converting between 'Either' and 'FreeEither'.
+-- |
+-- | The main use case for 'MonoEither' is when you need a variant of 'Either' where both
+-- | branches share the same type, and you want to leverage typeclass instances or work
+-- | with free monads.
 module MonoEither where
 
 import Control.Monad.Free (Free (Free, Pure))
 import Data.Functor.Classes (Eq1 (..), Ord1 (liftCompare), Show1 (liftShowsPrec))
 
+-- | A type alias for the free monad over 'MonoEither'.
+-- | This represents computations that can branch into 'Left' or 'Right' at each step,
+-- | with both branches containing the same type.
 newtype MonoEither a = MonoEither (Either a a)
   deriving (Eq, Ord)
   deriving newtype (Show)
@@ -35,11 +51,37 @@ instance Functor MonoEither where
   fmap f (MonoEither (Left a)) = MonoEither $ Left $ f a
   fmap f (MonoEither (Right a)) = MonoEither $ Right $ f a
 
+-- | A newtype wrapper around 'Either' where both 'Left' and 'Right' contain values of the same type.
+-- | This type is useful for scenarios where you want to treat 'Either' symmetrically or need
+-- | specialized typeclass instances.
 type FreeEither a = Free MonoEither a
 
+-- | Converts a standard 'Either' value into a 'FreeEither' value.
+-- | This wraps the 'Either' value in the free monad structure.
+-- |
+-- | ==== __Examples__
+-- |
+-- | >>> eitherToFree (Left 42)
+-- Free (Left (Pure 42))
+-- |
+-- | >>> eitherToFree (Right 42)
+-- Free (Right (Pure 42))
 eitherToFree :: Either a a -> FreeEither a
 eitherToFree e = Free $ Pure <$> MonoEither e
 
+-- | Extracts the final value from a 'FreeEither' computation.
+-- | This function recursively evaluates the free monad structure until it reaches a 'Pure' value.
+-- |
+-- | ==== __Examples__
+-- |
+-- | >>> freeToA (Pure 42)
+-- 42
+-- |
+-- | >>> freeToA (Free (MonoEither (Left (Pure 42))))
+-- 42
+-- |
+-- | >>> freeToA (Free (MonoEither (Right (Pure 42))))
+-- 42
 freeToA :: FreeEither a -> a
 freeToA (Pure a) = a
 freeToA (Free (MonoEither (Left a))) = freeToA a

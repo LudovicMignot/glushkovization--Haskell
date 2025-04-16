@@ -3,29 +3,13 @@
 // of one; the post-linker script will copy all contents into a new
 // ESM module.
 
-// Manage a mapping from unique 32-bit ids to actual JavaScript
-// values.
+// Manage a mapping from 32-bit ids to actual JavaScript values.
 class JSValManager {
   #lastk = 0;
   #kv = new Map();
 
-  constructor() {}
-
-  // Maybe just bump this.#lastk? For 64-bit ids that's sufficient,
-  // but better safe than sorry in the 32-bit case.
-  #allocKey() {
-    let k = this.#lastk;
-    while (true) {
-      if (!this.#kv.has(k)) {
-        this.#lastk = k;
-        return k;
-      }
-      k = (k + 1) | 0;
-    }
-  }
-
   newJSVal(v) {
-    const k = this.#allocKey();
+    const k = ++this.#lastk;
     this.#kv.set(k, v);
     return k;
   }
@@ -115,23 +99,26 @@ getJSVal: (k) => __ghc_wasm_jsffi_jsval_manager.getJSVal(k),
 freeJSVal: (k) => __ghc_wasm_jsffi_jsval_manager.freeJSVal(k),
 scheduleWork: () => setImmediate(__exports.rts_schedulerLoop),
 ZC0ZCglushkovizzationzm0zi1zi0zi0zminplacezmglushkovizzationzmexeZCSVGAutZC: ($1) => {var im = Viz( $1 , { format: "svg" }); console.log(im); return im;},
-ZC0ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1,$2) => ((new TextDecoder('utf-8', {fatal: true})).decode(new Uint8Array(__exports.memory.buffer, $1, $2))),
-ZC1ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1,$2,$3) => ((new TextEncoder()).encodeInto($1, new Uint8Array(__exports.memory.buffer, $2, $3)).written),
-ZC2ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => ($1.length),
-ZC5ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC: async ($1,$2,$3) => (new Function('processResult','readBatch',`(()=>{${$1}})()`)($2, $3)),
-ZC7ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => (() => __exports.ghczuwasmzujsffiZC6ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC($1)),
-ZC9ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => ((a1) => __exports.ghczuwasmzujsffiZC8ZCjsaddlezmwasmzm0zi0zi1zi0zm98777aff6aea0e3f165372b86019e665705eb9f701cf8ace66b3ba4b2f763c8bZCLanguageziJavascriptziJSaddleziWasmziInternalZC($1,a1)),
+ZC0ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1,$2) => ((new TextDecoder('utf-8', {fatal: true})).decode(new Uint8Array(__exports.memory.buffer, $1, $2))),
+ZC1ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1,$2,$3) => ((new TextEncoder()).encodeInto($1, new Uint8Array(__exports.memory.buffer, $2, $3)).written),
+ZC2ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => ($1.length),
+ZC5ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: async ($1,$2,$3,$4) => (new Function('processResult','processResultSync','readBatch',`(()=>{${$1}})()`)($2, $3, $4)),
+ZC7ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => ((...args) => __exports.ghczuwasmzujsffiZC6ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC($1, ...args)),
+ZC9ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => ((...args) => __exports.ghczuwasmzujsffiZC8ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC($1, ...args)),
+ZC11ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC: ($1) => ((...args) => __exports.ghczuwasmzujsffiZC10ZCjsaddlezmwasmzm0zi1zi0zi0zm2f0feb1cb7f9c5ca0c014352e56ed67d3d2a1be4875523aec9d8d7aecb3b895fZCLanguageziJavascriptziJSaddleziWasmziInternalZC($1, ...args)),
 ZC0ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1,$2) => ($1.reject(new WebAssembly.RuntimeError($2))),
 ZC18ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1,$2) => ($1.resolve($2)),
 ZC19ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1) => ($1.resolve()),
-ZC20ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: () => {let res, rej; const p = new Promise((resolve, reject) => { res = resolve; rej = reject; }); p.resolve = res; p.reject = rej; return p;},
-ZC21ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1,$2) => (__ghc_wasm_jsffi_finalization_registry.register($1, $2, $1)),
+ZC20ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1) => {$1.throwTo = () => {};},
+ZC21ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1,$2) => {$1.throwTo = (err) => __exports.rts_promiseThrowTo($2, err);},
+ZC22ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: () => {let res, rej; const p = new Promise((resolve, reject) => { res = resolve; rej = reject; }); p.resolve = res; p.reject = rej; return p;},
+ZC23ZCghczminternalZCGHCziInternalziWasmziPrimziExportsZC: ($1,$2) => (__ghc_wasm_jsffi_finalization_registry.register($1, $2, $1)),
 ZC18ZCghczminternalZCGHCziInternalziWasmziPrimziImportsZC: ($1,$2) => ($1.then(() => __exports.rts_promiseResolveUnit($2), err => __exports.rts_promiseReject($2, err))),
 ZC0ZCghczminternalZCGHCziInternalziWasmziPrimziTypesZC: ($1) => (`${$1.stack ? $1.stack : $1}`),
 ZC1ZCghczminternalZCGHCziInternalziWasmziPrimziTypesZC: ($1,$2) => ((new TextDecoder('utf-8', {fatal: true})).decode(new Uint8Array(__exports.memory.buffer, $1, $2))),
 ZC2ZCghczminternalZCGHCziInternalziWasmziPrimziTypesZC: ($1,$2,$3) => ((new TextEncoder()).encodeInto($1, new Uint8Array(__exports.memory.buffer, $2, $3)).written),
 ZC3ZCghczminternalZCGHCziInternalziWasmziPrimziTypesZC: ($1) => ($1.length),
-ZC4ZCghczminternalZCGHCziInternalziWasmziPrimziTypesZC: ($1) => {if (!__ghc_wasm_jsffi_finalization_registry.unregister($1)) { throw new WebAssembly.RuntimeError('js_callback_unregister'); }},
+ZC4ZCghczminternalZCGHCziInternalziWasmziPrimziTypesZC: ($1) => {try { __ghc_wasm_jsffi_finalization_registry.unregister($1); } catch {}},
 ZC0ZCghczminternalZCGHCziInternalziWasmziPrimziConcziInternalZC: async ($1) => (new Promise(res => setTimeout(res, $1 / 1000))),
 };
 };
