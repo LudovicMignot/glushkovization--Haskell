@@ -22,11 +22,8 @@ import HistoNFA
     renumStatesPS',
     stabOrbNFA,
     stabPS',
-    switchFinal',
     switchFinals',
-    switchInit',
     switchInits',
-    switchTrans',
     switchTranss',
     trimPS',
   )
@@ -40,7 +37,7 @@ import Reflex (Dynamic, constDyn, ffor, performEvent)
 import Reflex.Dom.Core (DomBuilder, MonadWidget, foldDyn, leftmost, (=:))
 import Reflex.Dom.Widget (dyn, el, elAttr, text)
 import ToString (toString)
-import Widget (labelledButton, lecteurInt, lecteurIntSuchThat, lecteurInts, lecteurTrans)
+import Widget (labelledButton, lecteurIntSuchThat, lecteurInts, lecteurTrans)
 
 header :: (DomBuilder t m) => m ()
 header =
@@ -138,7 +135,7 @@ body wasm_content = do
                                                  in isTrim autom && isHomogeneous autom && isStandard autom && isExtIsolated autom o && isIntIsolated autom o && p `Set.member` getStates autom && not (Set.null (getPreds autom p))
                                            in (isInIsolatedOrbWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
                                     )
-                                <*> (labelledButton "Stabilize" ((\(_x, y, _z) -> either (\nfa -> isStandard nfa && isHomogeneous nfa && isTrim nfa) (\nfa -> isStandardPS nfa && isHomogeneousPS nfa && isTrimPS nfa) y) <$> aut_dyn))
+                                <*> (labelledButton "Strongly Stabilize" ((\(_x, y, _z) -> either (\nfa -> isStandard nfa && isHomogeneous nfa && isTrim nfa && not (isStronglyStableNFA nfa)) (\nfa -> isStandardPS nfa && isHomogeneousPS nfa && isTrimPS nfa && not (isStronglyStableNFAPS nfa)) y) <$> aut_dyn))
                     )
             _ <-
               ( elAttr "div" ("class" =: "accordion-item") $ do
@@ -184,8 +181,8 @@ body wasm_content = do
         elAttr "thead" ("class" =: "table-dark") $ do
           el "tr" $ do
             elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Orbit"
-            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Int Isolated"
-            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Ext Isolated"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Ingate Isolated"
+            elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Outgate Isolated"
             elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Stable"
             elAttr "th" ("scope" =: "col" <> "class" =: "text-center align-middle") $ text "Strongly stable"
         el "tbody" $ do
