@@ -1,5 +1,36 @@
 {-# LANGUAGE GADTs #-}
 
+-- |
+-- Module      : PSNFA
+-- Description : Provides a wrapper around NFAs (Non-deterministic Finite Automata) with phantom states and utility functions.
+--
+-- This module defines the `PSNFA` type, which is a wrapper around an `NFA` (Non-deterministic Finite Automaton)
+-- that hides the state type while ensuring that the states are showable, orderable, and convertible to strings.
+-- It provides utility functions to manipulate and analyze `PSNFA` instances, including operations for
+-- homogeneity, trimming, standardization, state renumbering, and stability analysis.
+--
+-- The key features of this module include:
+--
+-- * **Homogeneity**: Functions to check and enforce homogeneity of a `PSNFA`.
+-- * **Trimming**: Functions to trim unreachable or non-co-accessible states from a `PSNFA`.
+-- * **Standardization**: Functions to check and enforce standardization of a `PSNFA`.
+-- * **State Renumbering**: A function to renumber the states of a `PSNFA` to a contiguous range.
+-- * **Graph Representation**: A function to convert a `PSNFA` to a DOT representation for visualization.
+-- * **Orbit Analysis**: A function to compute the orbits of a `PSNFA` using Kosaraju's algorithm.
+-- * **Stability Analysis**: Functions to check whether a `PSNFA` is isolated, stable, or strongly stable.
+--
+-- This module relies on several other modules for its functionality:
+--
+-- * `NFA`: Provides the core `NFA` type and basic operations.
+-- * `NFAAccessibility`: Provides functions for trimming and checking trimness.
+-- * `NFADotRepr`: Provides functions for converting NFAs to DOT representations.
+-- * `NFAHomogeneity`: Provides functions for checking and enforcing homogeneity.
+-- * `NFAOrbit`: Provides functions for orbit analysis and stability checks.
+-- * `NFAStandard`: Provides functions for checking and enforcing standardization.
+-- * `ToString`: Provides a typeclass for converting values to strings.
+--
+-- The `PSNFA` type and its associated functions are designed to simplify the manipulation of NFAs while
+-- abstracting away the details of the state type.
 module PSNFA where
 
 import NFA (NFA, renumStates)
