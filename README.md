@@ -1,41 +1,54 @@
-# glushkovization
+# Glushkovization
 
-This project is related to the study of a conversion method from NFA to regular expression based on the Caron and Ziadi characterization of Glushkov automata, i.e. the NFAs computed from the Glushkov method.
+This project focuses on the study and implementation of a conversion method from Non-deterministic Finite Automata (NFA) to regular expressions, based on the Caron and Ziadi characterization of Glushkov automata. These automata are isomorphic to the ones obtained from the Glushkov method.
 
-The strong stabilization is the first step toward the computation, from any NFA, of an equivalent Glushkov NFA.
+The first step in this process involves strong stabilization, a structural property of Glushkov NFAs.
 
-This project is an implementation of the differzent algorithms described in a forthcoming paper.
-It includes a web app made ith Reflex and compiled with the GHC WASM Backend to produce a js application.
+This repository provides an implementation of various algorithms described in a forthcoming paper. Additionally, it includes a web application built with Reflex and compiled using the GHC WASM Backend to produce a JavaScript application.
+
+## Features
+
+- **Algorithm Implementation**: Implements algorithms for trim, standardize, homogenize and stabilize NFAs.
+- **Web Application**: Interactive web app for visualizing and manipulating NFAs.
+- **Randomized Testing**: Property-based tests using QuickCheck.
 
 ## Compilation
 
-### Using cabal
+### Using Cabal
 
-`cabal build` can be used to compile all the elements of the project, except the one using marshal JS values (GHC.WASM.Prim module).
-It can be useful to link infos to Haskell Language Server for example, to use advanced features in VS Code.
+Run `cabal build` to compile most parts of the project, except components relying on marshaling JavaScript values (i.e. elements using the `GHC.WASM.Prim` module). This can be useful for integrating with tools like Haskell Language Server for enhanced development features in editors like VS Code.
 
-### Using GHC Backend
-A script file (build.sh) can be launched `./build.sh` with no optimization, `./build.sh -O4` to build with optimization.
+### Using GHC WASM Backend
 
-## Test
+Use the provided script `build.sh` to compile the project:
+- Run `./build.sh` for a basic build.
+- Run `./build.sh -O4` for an optimized build.
 
-Random property tests defined using Quickcheck can be launched via `cabal test`.
+## Testing
 
-## Web App
+Random property-based tests are defined using QuickCheck. Run the tests with:
 
-After compilation with `build.sh`, the resulting web app is copied in the frontend folder.
-Launch `index.html`in a web browser to see the application:
+```bash
+cabal test
+```
 
-* A random NFA is computed at launch.
-* The **Commands** panel allows the user to homogenize, standardize and trim NFA.
-* The **Construction** panel allows the user to switch initiality and finality of states, and existence of transitions.
-To perform these operations, the NFA has to be defined over integer states.
-If it is not (e.g., after homogenization or standardization), it can be renumeroted using the **State Renumerotation** button in the top of the application.
-This panel also allows the computation of a random NFA. 
-* The **Orbital operations** panel allows the computation, for integer state based trim, standard and homogeneous NFAs, of
-  * outgate isolation by selecting an outgate
-  * ingate isolation by selecting the chosen ingate
-  * orbital nfa by selecting a state of the chosen orbit
-  * substitutes a stable orbit by an equivalent strongly stable one, selecting a state of the orbit
-* The **Informations** panel contains info about the properties of the NFA (e.g., homogeneity or stability)
-* The **Orbital Informations** panel contains info about the proserties of the orbits(e.g., isolation or stability).
+## Web Application
+
+After building the project with `build.sh`, the resulting web application is copied to the `frontend` folder. Open `index.html` in a web browser to use the application.
+
+### Web App Features
+
+- **Random NFA Generation**: A random NFA is generated at launch.
+- **Commands Panel**: Perform operations like homogenization, standardization, and trimming of NFAs.
+- **Construction Panel**: Modify the NFA by:
+  - Switching initiality and finality of states.
+  - Adding or removing transitions.
+  - Generating a new random NFA.
+Renumbering states can be required after homogenization or standardization, using the **State Renumbering** button, to perform some of the first two operations above.
+- **Orbital Operations Panel**: For integer state-based, trimmed, standardized, and homogeneous NFAs:
+  - Isolate outgates or ingates.
+  - Compute orbital NFAs.
+  - Replace a stable orbit with an equivalent strongly stable one.
+- **Information Panel**: Displays properties of the NFA, such as homogeneity and stability.
+- **Orbital Information Panel**: Provides details about the properties of orbits, such as isolation and stability.
+
