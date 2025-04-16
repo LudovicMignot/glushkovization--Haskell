@@ -1,9 +1,23 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+-- |
+-- Module      : NFABoolComb
+-- Description : Provides operations for combining NFAs using boolean operations
+--
+-- This module defines functions to manipulate and combine Non-deterministic
+-- Finite Automata (NFAs) using boolean operations. In particular, it includes
+-- functionality to compute the symmetric difference of two NFAs. The symmetric
+-- difference operation constructs a new NFA that recognizes strings accepted
+-- by exactly one of the input NFAs, but not both.
+--
+-- The primary function in this module is:
+--
+-- * 'symDiff': Computes the symmetric difference of two NFAs by determinizing
+--   them and constructing their product automaton.
 module NFABoolComb where
 
 import Control.Monad (when)
-import Control.Monad.State (evalState, get, modify, put)
+import Control.Monad.State (evalState, get, modify)
 import qualified Data.Foldable as F
 import qualified Data.Map as Map
 import Data.Set (Set)
