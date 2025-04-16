@@ -15,7 +15,7 @@ module HistoNFA where
 import qualified Data.Set as Set
 import NFA (NFA, getStates, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (trim)
-import NFAOrbit (externalIsolation, internalIsolation, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit, strongStabilizationNFA)
+import NFAOrbit (externalIsolation, ingateIsolation, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit, strongStabilizationNFA)
 import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 
 -- | An Histo automaton is composed of the previous automata, the current automaton and the next automata
@@ -55,11 +55,11 @@ extIsol' (Just i) (before, Left aut, _after)
     orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
 extIsol' _m_int au = au
 
--- | Internally isolates the orbit containing a state i if it is not Nothing in the current automaton of an histo automaton
+-- | Ingate isolates the orbit containing a state i if it is not Nothing in the current automaton of an histo automaton
 -- if the automaton is an NFA. Otherwise it does nothing.
 intIsol' :: Maybe Int -> Histo -> Histo
 intIsol' (Just i) (before, Left aut, _after)
-  | i `Set.member` (getStates aut) = (Left aut : before, Right $ PSNFA $ fst $ internalIsolation aut orbit_i i, [])
+  | i `Set.member` (getStates aut) = (Left aut : before, Right $ PSNFA $ fst $ ingateIsolation aut orbit_i i, [])
   where
     orbit_i = Set.unions $ Set.filter (i `Set.member`) $ kosarajuSet aut
 intIsol' _m_int au = au

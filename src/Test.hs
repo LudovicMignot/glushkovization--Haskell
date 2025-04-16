@@ -25,7 +25,7 @@ import NFAHomogeneity
     isHomogeneous,
     makeHomogeneous,
   )
-import NFAOrbit (externalIsolation, ingates, internalIsolation, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, strongStabilizationNFA)
+import NFAOrbit (externalIsolation, ingateIsolation, ingates, isIsolatedNFA, isStableNFA, isStronglyStableNFA, kosaraju, kosaraju1, kosarajuSet, orbitalIsolationViaSuccOutgates, orbitalSubstitution, outgates, strongStabilizationNFA)
 import NFAStandard
   ( generateStandardNFA,
     isStandard,
@@ -155,8 +155,8 @@ runExternalIsolation = do
           _ <- toPngInImgDir "test_extIso2" aut'
           print "Done"
 
-runInternalIsolation :: IO ()
-runInternalIsolation = do
+runingateIsolation :: IO ()
+runingateIsolation = do
   aut <- generateNFA ['a' .. 'c'] [1 .. 10 :: Int] 2 5 15
   _ <- toPngInImgDir "test_intIso1" aut
   let orbits = kosarajuSet aut
@@ -167,7 +167,7 @@ runInternalIsolation = do
       print o
       g <- generate $ elements $ Set.toList o
       print g
-      let aut' = fst $ internalIsolation aut o g
+      let aut' = fst $ ingateIsolation aut o g
       _ <- toPngInImgDir "test_intIso2" aut'
       print "Done"
 
@@ -299,7 +299,7 @@ runCounterExample = do
 
   let aut' = orbitalIsolationViaSuccOutgates aut
 
-  let (aut'2, new_states) = internalIsolation aut (Set.fromList [1, 4]) 4
+  let (aut'2, new_states) = ingateIsolation aut (Set.fromList [1, 4]) 4
 
   print $ toString new_states
 

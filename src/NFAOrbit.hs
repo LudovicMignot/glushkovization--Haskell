@@ -164,10 +164,10 @@ externalIsolation nfa orbit g = NFA initial' final' delta' (reverseTransitionMap
 
 -- | For a given set O of states and a given state g, adds a clone of O \ {g}.
 -- The original O has only one incoming link with the outside through g.
--- If O is an orbit and g a state of O, performs the internal isolation of O.
+-- If O is an orbit and g a state of O, performs the ingate isolation of O.
 -- The new added state "Right" ones, the "old" ones "Left" ones.
 -- Also returns the new added states
-internalIsolation ::
+ingateIsolation ::
   (Ord state, Ord symbol) =>
   -- | The NFA A
   NFA symbol state ->
@@ -175,9 +175,9 @@ internalIsolation ::
   Set state ->
   -- | A state g
   state ->
-  -- | The (possible) internal isolation of g
+  -- | The (possible) ingate isolation of g
   (NFA symbol (Either state state), Set (Either state state))
-internalIsolation nfa orbit g =
+ingateIsolation nfa orbit g =
   -- ici remplacer trim
   -- trim $ NFA initial' final' delta' (reverseTransitionMap delta')
   (NFA initial' final' delta' (reverseTransitionMap delta'), Set.map Right o_no_g_acc)
@@ -232,7 +232,7 @@ isExtIsolated nfa orbit = F.length (outgates nfa orbit) <= 1
 isNFAExtIsolated :: (Ord state) => NFA symbol state -> Bool
 isNFAExtIsolated nfa = F.all (isExtIsolated nfa) $ kosarajuSet nfa
 
--- | Tests whether an orbit is internally isolated
+-- | Tests whether an orbit is ingate isolated
 isIntIsolated :: (Ord state) => NFA symbol state -> Set state -> Bool
 isIntIsolated nfa orbit = F.length (ingates nfa orbit) <= 1
 
@@ -267,7 +267,7 @@ orbitalIsolationViaSuccOutgates nfa = aux nfa' orbits
         isIntIso = isIntIsolated aut o
         g = Set.findMax outs
         succ_out = Set.findMax $ getSuccs aut g `Set.intersection` o
-        (aut'_, new_states) = internalIsolation aut o succ_out
+        (aut'_, new_states) = ingateIsolation aut o succ_out
         aut' = mapState (Free . MonoEither) aut'_
         new_orbs = fmap Set.fromList $ kosaraju $ removeStates aut'_ $ getStates aut'_ `Set.difference` new_states -- (Set.delete succ_out o)
 

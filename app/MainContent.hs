@@ -65,7 +65,7 @@ body ::
   m ()
 body wasm_content = do
   _ <- elAttr "div" ("class" =: "container") $ do
-    elAttr "h1" ("class" =: "text-center") $ text "Orbit Stabilization"
+    elAttr "h1" ("class" =: "text-center") $ text "Orbit Strong Stabilization"
     el "hr" $ return ()
   aut <- liftIO $ Left <$> generateNFA ['a' .. 'e'] [(0 :: Int) .. 5] 2 2 10
 
@@ -118,7 +118,7 @@ body wasm_content = do
                                               isExtGate p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let outs = outgates autom o in p `Set.member` outs && Set.size outs > 1) $ Set.fromList <$> kosaraju autom)
                                            in (isExtGate i . \(_x, y, _z) -> y) <$> aut_dyn
                                     )
-                                <*> ( lecteurIntSuchThat "Internal isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol" $
+                                <*> ( lecteurIntSuchThat "Ingate isolation" "isolate" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "intIsol" $
                                         \i ->
                                           let goodProp _ (Right _) = False
                                               goodProp p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && (any (\o -> let ins = ingates autom o in p `Set.member` o && ins /= Set.singleton p) $ Set.fromList <$> kosaraju autom)
@@ -166,7 +166,7 @@ body wasm_content = do
           evts <-
             elAttr "div" (Map.fromList [("role", "group"), ("class", "btn-group sticky-top")]) $
               (,,)
-                <$> (labelledButton "renum" $ constDyn True)
+                <$> (labelledButton "State Renumerotation" $ constDyn True)
                 <*> labelledButton "<" ((\(x, _y, _z) -> not $ null x) <$> aut_dyn)
                 <*> labelledButton ">" ((\(_x, _y, z) -> not $ null z) <$> aut_dyn)
 
