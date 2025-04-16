@@ -1,5 +1,27 @@
 {-# LANGUAGE FlexibleInstances #-}
 
+-- |
+-- Module      : ToString
+-- Description : Provides a typeclass for converting various types to strings,
+--               including HTML-specific string representations and utilities for printing.
+--
+-- This module defines the 'ToString' typeclass, which allows for converting
+-- different types into string representations. It includes methods for
+-- generating plain strings, HTML strings, and HTML strings with uppercase
+-- symbols enclosed in angle brackets. Additionally, it provides a utility
+-- for printing string representations to the console.
+--
+-- The module includes instances for common types such as 'Bool', 'Char',
+-- 'Int', 'Word', 'Maybe', 'Either', and collections like 'Set' and lists.
+-- It also supports custom types like 'MonoEither' and 'FreeEither'.
+--
+-- Key features:
+--
+-- * Conversion to plain strings using 'toString'.
+-- * Conversion to HTML strings using 'toHtmlString'.
+-- * Conversion to HTML strings with uppercase symbols between "<" and ">"
+--   using 'toHtmlCapString'.
+-- * Printing string representations to the console using 'myPrintLn'.
 module ToString where
 
 import Control.Monad.Free (Free (Free, Pure))

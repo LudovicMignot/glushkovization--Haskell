@@ -1,3 +1,19 @@
+-- |
+-- Module      : NFAStandard
+-- Description : Provides functions to determine if a Non-deterministic Finite Automaton (NFA) is standard and to convert an NFA into an equivalent standard NFA.
+--
+-- This module defines utilities for working with standard NFAs. A standard NFA is defined as an NFA with a single initial state that is not the destination of any transition. The module includes:
+--
+-- * A function to check if an NFA is standard.
+-- * A function to transform a given NFA into an equivalent standard NFA by adding a new initial state.
+-- * A generator for creating random standard NFAs.
+--
+-- The module relies on the `NFA` module for the core NFA data structure and operations, and uses various utilities from the `Data.Map`, `Data.Set`, and `Data.Foldable` libraries for handling collections and transitions.
+--
+-- Key functions:
+-- - `isStandard`: Checks if an NFA is standard.
+-- - `makeStandard`: Converts an NFA into an equivalent standard NFA.
+-- - `generateStandardNFA`: Generates a random standard NFA using specified parameters.
 module NFAStandard where
 
 import qualified Data.Foldable as F (all)
