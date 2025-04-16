@@ -1,5 +1,12 @@
 # glushkovization
 
+This project is related to the study of a conversion method from NFA to regular expression based on the Caron and Ziadi characterization of Glushkov automata, i.e. the NFAs computed from the Glushkov method.
+
+The strong stabilization is the first step toward the computation, from any NFA, of an equivalent Glushkov NFA.
+
+This project is an implementation of the differzent algorithms described in a forthcoming paper.
+It includes a web app made ith Reflex and compiled with the GHC WASM Backend to produce a js application.
+
 ## Compilation
 
 ### Using cabal
