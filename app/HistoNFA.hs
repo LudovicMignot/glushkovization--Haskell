@@ -3,7 +3,7 @@ module HistoNFA where
 import qualified Data.Set as Set
 import NFA (NFA, getStates, renumStates, switchFinal, switchInit, switchTrans)
 import NFAAccessibility (trim)
-import NFAOrbit (externalIsolation, internalIsolation, kosarajuSet, orbitalNFA, outgates, stabilizationNFA, stabilizeOrbit)
+import NFAOrbit (externalIsolation, internalIsolation, kosarajuSet, orbitalNFA, outgates, stabilizeOrbit, strongStabilizationNFA)
 import PSNFA (PSNFA (PSNFA), makeHomogeneousPS, makeStandardPS, renumStatesPStoNFA, trimPS)
 
 -- | An Histo automaton is composed of the previous automata, the current automaton and the next automata
@@ -106,8 +106,8 @@ renumStatesPS' (before, Right aut, _after) = (Right aut : before, Left $ renumSt
 
 -- | Stabilizes the orbits of the current automaton of an histo automaton
 stabPS' :: Histo -> Histo
-stabPS' (before, Left aut, _after) = (Left aut : before, Right $ PSNFA $ stabilizationNFA aut, [])
-stabPS' (before, auto@(Right (PSNFA aut)), _after) = (auto : before, Right $ PSNFA $ stabilizationNFA aut, [])
+stabPS' (before, Left aut, _after) = (Left aut : before, Right $ PSNFA $ strongStabilizationNFA aut, [])
+stabPS' (before, auto@(Right (PSNFA aut)), _after) = (auto : before, Right $ PSNFA $ strongStabilizationNFA aut, [])
 
 -- | Shifts an histo automaton to the previous state
 prec' :: Histo -> Histo
