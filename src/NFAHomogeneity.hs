@@ -1,5 +1,12 @@
 {-# LANGUAGE TupleSections #-}
 
+-- | This module provides functionality for analyzing and transforming
+-- Non-deterministic Finite Automata (NFA) with respect to their homogeneity.
+-- It includes functions to determine if an NFA is homogeneous, to transform
+-- an NFA into an equivalent homogeneous NFA, and to generate homogeneous NFAs.
+--
+-- An NFA is considered homogeneous if, for every state, any two letters
+-- entering that state are equal.
 module NFAHomogeneity where
 
 import qualified Data.Foldable as F (foldMap)
