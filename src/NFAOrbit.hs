@@ -385,10 +385,6 @@ strongStabilizationNFA nfa = aux nfa' orbits
 -- | Tests whether an orbit is externally stable
 isExtStable :: (Ord state) => NFA symbol state -> Set state -> Bool
 isExtStable aut o =
-  -- ici ajout trace
-  -- if null ins || null outs
-  --   then error $ "Empty ins or outs: " ++ show aut ++ show ins ++ show outs
-  --   else
   allEqual preds_out_o && allEqual succs_out_o
   where
     ins = Set.toList $ ingates aut o

@@ -127,12 +127,12 @@ body wasm_content = do
                                               isIntStateWithPred p (Left autom) = isTrim autom && isHomogeneous autom && isStandard autom && not (Set.null (getPreds autom p)) && (any (\o -> let ins = ingates autom o in p `Set.member` o && not (Set.null ins)) $ Set.fromList <$> kosaraju autom)
                                            in (isIntStateWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
                                     )
-                                <*> ( lecteurIntSuchThat "Stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
+                                <*> ( lecteurIntSuchThat "Strongly stabilizes orbit" "compute" ((\(_x, y, _z) -> isLeft y) <$> aut_dyn) "stabOrb" $
                                         \i ->
                                           let isInIsolatedOrbWithPred _ (Right _) = False
                                               isInIsolatedOrbWithPred p (Left autom) =
                                                 let o = Set.unions $ filter (p `Set.member`) $ Set.fromList <$> kosaraju autom
-                                                 in isTrim autom && isHomogeneous autom && isStandard autom && isExtIsolated autom o && isIntIsolated autom o && p `Set.member` getStates autom && not (Set.null (getPreds autom p))
+                                                 in isTrim autom && isHomogeneous autom && isStandard autom && isStable autom o && p `Set.member` getStates autom && not (Set.null (getPreds autom p))
                                            in (isInIsolatedOrbWithPred i . \(_x, y, _z) -> y) <$> aut_dyn
                                     )
                                 <*> (labelledButton "Strongly Stabilize" ((\(_x, y, _z) -> either (\nfa -> isStandard nfa && isHomogeneous nfa && isTrim nfa && not (isStronglyStableNFA nfa)) (\nfa -> isStandardPS nfa && isHomogeneousPS nfa && isTrimPS nfa && not (isStronglyStableNFAPS nfa)) y) <$> aut_dyn))
@@ -202,7 +202,7 @@ body wasm_content = do
       elAttr "div" ("class" =: "d-flex flex-row justify-content-center") $ do
         el "p" $ text "The NFA is:"
         el "ul" $ do
-          el "li" $ text $ "Trimmed: " <> pack (show $ isTrimPS psAut)
+          el "li" $ text $ "Trim: " <> pack (show $ isTrimPS psAut)
           el "li" $ text $ "Homogeneous: " <> pack (show $ isHomogeneousPS psAut)
           el "li" $ text $ "Standard: " <> pack (show $ isStandardPS psAut)
           el "li" $ text $ "Orbitally isolated: " <> pack (show $ isIsolatedNFAPS psAut)
@@ -212,7 +212,7 @@ body wasm_content = do
       elAttr "div" ("class" =: "d-flex flex-row justify-content-center") $ do
         el "p" $ text "The NFA is:"
         el "ul" $ do
-          el "li" $ text $ "Trimmed: " <> pack (show $ isTrim aut)
+          el "li" $ text $ "Trim: " <> pack (show $ isTrim aut)
           el "li" $ text $ "Homogeneous: " <> pack (show $ isHomogeneous aut)
           el "li" $ text $ "Standard: " <> pack (show $ isStandard aut)
           el "li" $ text $ "Orbitally isolated: " <> pack (show $ isIsolatedNFA aut)
