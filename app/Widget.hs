@@ -6,14 +6,13 @@ module Widget where
 
 import Control.Monad (void)
 import Data.Char (isAlphaNum)
-import Data.List (intercalate)
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Text as Te
   ( Text,
     unpack,
   )
-import Data.Void
+import Data.Void (Void)
 import Reflex (Dynamic, constDyn, ffor2, ffor3, tagPromptlyDyn)
 import Reflex.Dom.Core
   ( EventName (Click),
@@ -37,7 +36,19 @@ import Reflex.Dom.Widget
     (.~),
   )
 import Text.Megaparsec
-import Text.Megaparsec.Char
+  ( MonadParsec (eof),
+    Parsec,
+    between,
+    many,
+    oneOf,
+    optional,
+    parse,
+    satisfy,
+    sepBy,
+    some,
+    (<|>),
+  )
+import Text.Megaparsec.Char (char, digitChar, spaceChar)
 import Text.Read (readMaybe)
 
 type Parser = Parsec Void String
