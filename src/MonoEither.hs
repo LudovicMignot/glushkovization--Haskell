@@ -2,19 +2,19 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 
--- | Module      : MonoEither
--- | Description : Provides a newtype wrapper for 'Either' with identical types on both sides,
--- |               along with instances for common typeclasses and utility functions.
 -- |
--- | This module defines the 'MonoEither' type, which is a wrapper around 'Either' where both
--- | the 'Left' and 'Right' constructors contain values of the same type. It provides instances
--- | for 'Show1', 'Eq1', 'Ord1', and 'Functor', enabling advanced functionality for working
--- | with this type. Additionally, it defines a type alias 'FreeEither' for the free monad
--- | over 'MonoEither', and utility functions for converting between 'Either' and 'FreeEither'.
--- |
--- | The main use case for 'MonoEither' is when you need a variant of 'Either' where both
--- | branches share the same type, and you want to leverage typeclass instances or work
--- | with free monads.
+-- Module      : MonoEither
+-- Description : Provides a newtype wrapper for 'Either' with identical types on both sides, along with instances for common typeclasses and utility functions.
+--
+-- This module defines the 'MonoEither' type, which is a wrapper around 'Either' where both
+-- the 'Left' and 'Right' constructors contain values of the same type. It provides instances
+-- for 'Show1', 'Eq1', 'Ord1', and 'Functor', enabling advanced functionality for working
+-- with this type. Additionally, it defines a type alias 'FreeEither' for the free monad
+-- over 'MonoEither', and utility functions for converting between 'Either' and 'FreeEither'.
+--
+-- The main use case for 'MonoEither' is when you need a variant of 'Either' where both
+-- branches share the same type, and you want to leverage typeclass instances or work
+-- with free monads.
 module MonoEither where
 
 import Control.Monad.Free (Free (Free, Pure))

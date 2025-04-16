@@ -1,5 +1,17 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+-- |
+-- Module      : NFAAccessibility
+-- Description : Provides functions to analyze and manipulate the accessibility and coaccessibility of states in a Non-deterministic Finite Automaton (NFA).
+--
+-- This module defines utility functions for working with NFAs, including:
+--
+-- * Computing accessible states, coaccessible states, and useful states.
+-- * Determining whether an NFA is trim (i.e., all states are both accessible and coaccessible).
+-- * Trimming an NFA to keep only its useful states.
+-- * Exploring accessibility from a restricted set of states.
+--
+-- The functions leverage both pure and monadic approaches for state exploration, and they rely on the `Set` data structure for efficient state management.
 module NFAAccessibility where
 
 import Control.Monad.State.Lazy
