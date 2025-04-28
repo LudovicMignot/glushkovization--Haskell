@@ -332,7 +332,7 @@ orbitalNFA aut o = NFA (Set.singleton Nothing) (Set.map Just outs) (delta aut2')
     -- 2  Just ((first_symb, _) : _) -> addTransitions (mapState Just $ removeStates aut $ getStates aut `Set.difference` o) first_symb (Set.singleton Nothing) (Set.map Just ins)
     -- 2   _ -> mapState Just $ removeStates aut $ getStates aut `Set.difference` o
     aut2 = mapState Just $ removeStates aut $ getStates aut `Set.difference` o
-    aut2' = Set.foldl' (\g res -> addTransitions res (fromJust $ getIncomingSymbol aut g) (Set.singleton Nothing) (Set.singleton $ Just g)) aut2 ins
+    aut2' = Set.foldl' (\res g -> addTransitions res (fromJust $ getIncomingSymbol aut g) (Set.singleton Nothing) (Set.singleton $ Just g)) aut2 ins
 
 -- | Removes transitions from a set of states to another set of states by a given symbol
 removeTransFromTo :: (Ord state, Ord symbol) => NFA symbol state -> symbol -> Set state -> Set state -> NFA symbol state
