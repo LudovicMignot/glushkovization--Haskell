@@ -347,6 +347,8 @@ addTransitions aut a from to = NFA (initial aut) (final aut) delta' (reverseTran
     delta' = Set.foldl' (\trans s -> addSuccsInMap trans s a to) (delta aut) from
 
 -- | Strongly stabilizes an isolated orbit of an NFA
+-- NB : this function could be adapted to deal with stable (not isolated) orbits by modifying the considered symbol to add
+-- the transitions after the recursive call, computed with getIncomingSymbol from NFAHomogeneity module
 stabilizeOrbit :: (Ord state, Ord symbol) => NFA symbol state -> Set state -> NFA symbol (Either state (FreeEither (Maybe state)))
 stabilizeOrbit aut o = orbitalSubstitution aut o aut_o_stab_res
   where
