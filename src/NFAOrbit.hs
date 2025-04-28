@@ -320,7 +320,7 @@ orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'' (re
 
 -- * Stabilization functions
 
--- | Returns the orbital NFA associated with an isolated orbit in an homogeneous NFA
+-- | Returns the orbital NFA associated with an orbit in an homogeneous NFA
 orbitalNFA :: (Ord state, Ord symbol) => NFA symbol state -> Set state -> NFA symbol (Maybe state)
 orbitalNFA aut o = NFA (Set.singleton Nothing) (Set.map Just outs) (delta aut2') (delta_rev aut2')
   where
