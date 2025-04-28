@@ -36,6 +36,7 @@ import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, f
 import MonoEither (FreeEither, MonoEither (MonoEither))
 import NFA (NFA (NFA, delta_rev, final), addSuccsInMap, addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, reverseTransitionMap, transformsSuccs)
 import NFAAccessibility (getAccessibleStatesFromVia)
+import NFAHomogeneity (getIncomingSymbol)
 
 -- * Computation of the orbits
 
@@ -321,15 +322,17 @@ orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'' (re
 
 -- | Returns the orbital NFA associated with an isolated orbit in an homogeneous NFA
 orbitalNFA :: (Ord state, Ord symbol) => NFA symbol state -> Set state -> NFA symbol (Maybe state)
-orbitalNFA aut o = NFA (Set.singleton Nothing) (Set.map Just outs) (delta aut') (delta_rev aut')
+orbitalNFA aut o = NFA (Set.singleton Nothing) (Set.map Just outs) (delta aut2') (delta_rev aut2')
   where
     ins = ingates aut o
     outs = outgates aut o
-    -- (first_symb, _) = head $ Map.toList $ fromJust $ Map.lookup (fromJust $ Set.lookupMax ins) $ delta_rev aut
-    tmp = Map.toList <$> ((Set.lookupMax ins) >>= \r -> Map.lookup r $ delta_rev aut)
-    aut' = case tmp of
-      Just ((first_symb, _) : _) -> addTransitions (mapState Just $ removeStates aut $ getStates aut `Set.difference` o) first_symb (Set.singleton Nothing) (Set.map Just ins)
-      _ -> mapState Just $ removeStates aut $ getStates aut `Set.difference` o
+    -- 1 (first_symb, _) = head $ Map.toList $ fromJust $ Map.lookup (fromJust $ Set.lookupMax ins) $ delta_rev aut
+    -- 2 tmp = Map.toList <$> ((Set.lookupMax ins) >>= \r -> Map.lookup r $ delta_rev aut)
+    -- 2 aut' = case tmp of
+    -- 2  Just ((first_symb, _) : _) -> addTransitions (mapState Just $ removeStates aut $ getStates aut `Set.difference` o) first_symb (Set.singleton Nothing) (Set.map Just ins)
+    -- 2   _ -> mapState Just $ removeStates aut $ getStates aut `Set.difference` o
+    aut2 = mapState Just $ removeStates aut $ getStates aut `Set.difference` o
+    aut2' = Set.foldl' (\g res -> addTransitions res (fromJust $ getIncomingSymbol aut g) (Set.singleton Nothing) (Set.singleton $ Just g)) aut2 ins
 
 -- | Removes transitions from a set of states to another set of states by a given symbol
 removeTransFromTo :: (Ord state, Ord symbol) => NFA symbol state -> symbol -> Set state -> Set state -> NFA symbol state
