@@ -11,9 +11,9 @@ module NFAHomogeneity where
 
 import qualified Data.Foldable as F (foldMap)
 import Data.List (groupBy, nub, sort)
-import qualified Data.Map as Map (foldMapWithKey, mapWithKey, singleton)
+import qualified Data.Map as Map (Map, foldMapWithKey, lookup, map, mapWithKey, singleton, toList)
 import qualified Data.Set as Set (insert, map)
-import NFA (NFA (NFA, delta), final, generateNFASuchThat, getAlphabet, initial, reverseTransitionMap, transitionList)
+import NFA (NFA (NFA, delta), delta_rev, final, generateNFASuchThat, getAlphabet, initial, reverseTransitionMap, transitionList)
 
 -- * Homogeneous NFA
 
@@ -51,3 +51,32 @@ makeHomogeneous nfa =
 -- | Generates an homogeneous NFA using the corresponding makeGenNFA generator
 generateHomogeneousNFA :: (Ord state, Ord symbol) => [symbol] -> [state] -> Int -> Int -> Int -> IO (NFA symbol state)
 generateHomogeneousNFA = generateNFASuchThat isHomogeneous
+
+-- | For a given Homogeneous NFA, generates a Map where the keys are the states and the values are the symbols that can be used to transition to that state. If a state has no incoming transitions, the key is not in the resulting Map.
+generateHomogeneousNFAStateMap ::
+  -- | The NFA
+  NFA symbol state ->
+  -- | The resulting Map
+  Map.Map state (symbol)
+generateHomogeneousNFAStateMap nfa =
+  Map.map
+    ( \succs ->
+        fst $ head $ Map.toList $ succs
+    )
+    $ delta_rev nfa
+
+-- | Returns the symbol labelling the incoming transitions for a given state, if it exists
+-- If the state has no incoming transitions, Nothing is returned
+getIncomingSymbol ::
+  (Ord state) =>
+  -- | The NFA
+  NFA symbol state ->
+  -- | The state
+  state ->
+  -- | The resulting symbol
+  Maybe symbol
+getIncomingSymbol nfa state =
+  (Map.lookup state $ delta_rev nfa) >>= \succs ->
+    case Map.toList succs of
+      [] -> Nothing
+      ((a, _) : _) -> Just a
