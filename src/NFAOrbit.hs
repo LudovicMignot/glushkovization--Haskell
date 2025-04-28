@@ -343,7 +343,7 @@ addTransitions aut a from to = NFA (initial aut) (final aut) delta' (reverseTran
   where
     delta' = Set.foldl' (\trans s -> addSuccsInMap trans s a to) (delta aut) from
 
--- | Stabilizes an isolated orbit of an NFA
+-- | Strongly stabilizes an isolated orbit of an NFA
 stabilizeOrbit :: (Ord state, Ord symbol) => NFA symbol state -> Set state -> NFA symbol (Either state (FreeEither (Maybe state)))
 stabilizeOrbit aut o = orbitalSubstitution aut o aut_o_stab_res
   where
