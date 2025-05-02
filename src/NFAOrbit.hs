@@ -399,9 +399,9 @@ stabilizeOrbit aut o = orbitalSubstitution aut o aut_o_stab_res
 strongStabilizationNFA :: (Ord state, Ord symbol) => NFA symbol state -> NFA symbol (FreeEither state)
 strongStabilizationNFA nfa = aux nfa' orbits
   where
-    nfa' = orbitalIsolationViaSuccOutgates nfa
-    -- can be considered when orbitalSubstitution will accept not necessarily isolated orbit
-    -- nfa' = stabilizationViaOrbitalIsolationViaSuccOutgates nfa
+    -- nfa' = orbitalIsolationViaSuccOutgates nfa
+    -- [done] can be considered when orbitalSubstitution will accept not necessarily isolated orbit
+    nfa' = stabilizationViaOrbitalIsolationViaSuccOutgates nfa
     orbits = Set.fromList <$> kosaraju nfa'
     aux aut [] = aut
     aux aut (o : os)
