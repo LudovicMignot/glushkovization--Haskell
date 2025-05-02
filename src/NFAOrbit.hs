@@ -34,7 +34,7 @@ import Data.Maybe (fromJust)
 import Data.Set (Set)
 import qualified Data.Set as Set (delete, difference, disjoint, empty, filter, findMax, foldl', fromList, insert, intersection, isSubsetOf, lookupMax, map, member, null, singleton, toList, union)
 import MonoEither (FreeEither, MonoEither (MonoEither))
-import NFA (NFA (NFA, delta_rev, final), addSuccsInMap, addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, reverseTransitionMap, transformsSuccs)
+import NFA (NFA (NFA, delta_rev, final), addSuccsInMap, addTransitionInMap, delta, filterTransformsSuccs, foldMapSuccs, getPreds, getStates, getSuccs, getSuccsInTransitionMap, getSuccsWithSymbol, initial, isFinal, isInitial, mapState, removeStates, restrictSuccs, reverse, reverseTransitionMap, sendsState, transformsSuccs)
 import NFAAccessibility (getAccessibleStatesFromVia)
 import NFAHomogeneity (getIncomingSymbol)
 
@@ -321,9 +321,9 @@ orbitalSubstitution ::
   NFA symbol (Either state state')
 orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'' (reverseTransitionMap delta'')) o_l
   where
-    -- function that could be adapted to deal with stable and not necessarily isolated orbits
+    -- [done] function that could be adapted to deal with stable and not necessarily isolated orbits
     nfa_l = mapState Left nfa
-    first_nfa' = F.foldMap (getSuccs nfa') $ initial nfa'
+    -- first_nfa' = F.foldMap (getSuccs nfa') $ initial nfa'
     out_o = outgates nfa o
     nfa_r = mapState Right $ removeStates nfa' $ initial nfa'
     others_l = Set.map Left $ getStates nfa `Set.difference` o
@@ -341,9 +341,10 @@ orbitalSubstitution nfa o nfa' = removeStates (NFA initial'' final'' delta'' (re
         & flip
           ( Set.foldl'
               ( flip
-                  ( Map.adjust
-                      (foldMapSuccs (\p -> if Set.member p o_l then Set.map Right first_nfa' else Set.singleton p))
-                  )
+                  -- ( Map.adjust
+                  --     (foldMapSuccs (\p -> if Set.member p o_l then Set.map Right first_nfa' else Set.singleton p))
+                  -- )
+                  (Map.adjust (Map.mapWithKey (\a -> foldMap (\q -> if Set.member q o_l then Set.map Right (foldMap (sendsState nfa' a) $ initial nfa') else Set.singleton q))))
               )
           )
           others_l
